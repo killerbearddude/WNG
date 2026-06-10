@@ -10,4 +10,5 @@
 namespace wng
 {
     Result export_graph(const Graph& graph, GraphDto* out_graph);
+    Result import_graph(const GraphDto& dto, Graph* out_graph);
 }

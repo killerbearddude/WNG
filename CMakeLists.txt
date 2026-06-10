@@ -51,6 +51,7 @@ wng_add_test(test_mutation_summary tests/test_mutation_summary.cpp)
 wng_add_test(test_public_header_policy tests/test_public_header_policy.cpp)
 wng_add_test(test_serialization_dto tests/test_serialization_dto.cpp)
 wng_add_test(test_export_graph tests/test_export_graph.cpp)
+wng_add_test(test_import_graph tests/test_import_graph.cpp)
 set_tests_properties(test_public_header_policy PROPERTIES
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
