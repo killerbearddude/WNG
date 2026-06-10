@@ -12,6 +12,7 @@
 namespace wng
 {
     class Graph;
+    class GraphSchema;
 
     enum class ExecutionPlanScope {
         WholeGraph,
@@ -52,5 +53,13 @@ namespace wng
     // structure and reports cycles through unresolved_nodes rather than mutating Graph.
     ExecutionPlan build_execution_plan(
         const Graph& graph,
+        const ExecutionPlanRequest& request);
+
+    // Builds a deterministic, non-executing plan after validating both graph
+    // structure and schema consistency. This overload is for callers that require
+    // schema-valid nodes and ports before planning.
+    ExecutionPlan build_execution_plan(
+        const Graph& graph,
+        const GraphSchema& schema,
         const ExecutionPlanRequest& request);
 }

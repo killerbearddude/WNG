@@ -128,17 +128,20 @@ namespace
         return plan;
     }
 
-    wng::ExecutionPlan build_whole_graph_plan(const wng::Graph& graph)
+    wng::ExecutionPlan validation_failure_plan(
+        wng::ExecutionPlanScope scope,
+        wng::Result result)
+    {
+        wng::ExecutionPlan plan;
+        plan.scope = scope;
+        plan.result = result == wng::Result::Ok ? wng::Result::InvalidConnection : result;
+        return plan;
+    }
+
+    wng::ExecutionPlan build_whole_graph_plan_after_validation(const wng::Graph& graph)
     {
         wng::ExecutionPlan plan;
         plan.scope = wng::ExecutionPlanScope::WholeGraph;
-
-        const wng::ValidationReport validation = wng::validate_graph(graph);
-        if (!validation.valid()) {
-            const wng::Result result = first_error_result(validation);
-            plan.result = result == wng::Result::Ok ? wng::Result::InvalidConnection : result;
-            return plan;
-        }
 
         // Whole-graph planning consumes graph topological order directly. It is
         // still planning-only: no callbacks, evaluators, values, or execution
@@ -162,7 +165,7 @@ namespace
         return plan;
     }
 
-    wng::ExecutionPlan build_dirty_subgraph_plan(
+    wng::ExecutionPlan build_dirty_subgraph_plan_after_validation(
         const wng::Graph& graph,
         const wng::ExecutionPlanRequest& request)
     {
@@ -197,6 +200,35 @@ namespace
         plan.result = wng::Result::Ok;
         return plan;
     }
+
+    wng::ExecutionPlan build_plan_after_validation(
+        const wng::Graph& graph,
+        const wng::ExecutionPlanRequest& request)
+    {
+        if (request.scope == wng::ExecutionPlanScope::DirtySubgraph) {
+            return build_dirty_subgraph_plan_after_validation(graph, request);
+        }
+
+        // Dirty vectors are intentionally ignored in whole-graph mode. The scope
+        // selects either full topology planning or dirty-subgraph planning; mixing
+        // semantics here would make plans harder to reason about.
+        return build_whole_graph_plan_after_validation(graph);
+    }
+
+    wng::ExecutionPlan build_plan_after_structural_validation(
+        const wng::Graph& graph,
+        const wng::ExecutionPlanRequest& request)
+    {
+        const wng::ValidationReport validation = wng::validate_graph(graph);
+        if (!validation.valid()) {
+            return validation_failure_plan(request.scope, first_error_result(validation));
+        }
+
+        // This is the graph-only path: structural validation is the complete
+        // precondition. Schema validation remains opt-in through the overload
+        // taking GraphSchema, preserving existing graph-only planning semantics.
+        return build_plan_after_validation(graph, request);
+    }
 }
 
 namespace wng
@@ -216,14 +248,27 @@ namespace wng
         const ExecutionPlanRequest& request)
     {
         try {
-            if (request.scope == ExecutionPlanScope::DirtySubgraph) {
-                return build_dirty_subgraph_plan(graph, request);
+            return build_plan_after_structural_validation(graph, request);
+        } catch (const std::bad_alloc&) {
+            return allocation_failure_plan(request.scope);
+        }
+    }
+
+    ExecutionPlan build_execution_plan(
+        const Graph& graph,
+        const GraphSchema& schema,
+        const ExecutionPlanRequest& request)
+    {
+        try {
+            // Schema-aware planning validates schema consistency before any plan
+            // construction. This prevents domain tools from receiving plans for
+            // structurally valid graphs whose nodes or ports violate their schema.
+            const ValidationReport validation = validate_graph(graph, schema);
+            if (!validation.valid()) {
+                return validation_failure_plan(request.scope, first_error_result(validation));
             }
 
-            // Dirty vectors are intentionally ignored in whole-graph mode. The
-            // scope selects either full topology planning or dirty-subgraph
-            // planning; mixing semantics here would make plans harder to reason about.
-            return build_whole_graph_plan(graph);
+            return build_plan_after_validation(graph, request);
         } catch (const std::bad_alloc&) {
             return allocation_failure_plan(request.scope);
         }
