@@ -21,6 +21,7 @@ namespace wng
 
     struct NodeDto {
         NodeId id;
+        std::string type;
         std::string title;
         Vec2 position;
         Vec2 size;
