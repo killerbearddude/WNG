@@ -111,6 +111,24 @@ Current execution planning status:
 - stored execution state: not implemented
 - threaded/asynchronous scheduling: not implemented
 
+## Command layer status
+
+WNG includes command-style mutation helpers that record mutation results for future undo/redo integration.
+
+Current command status:
+
+- command result records: implemented
+- create node command helper: implemented
+- destroy node command helper: implemented
+- add port command helper: implemented
+- remove port command helper: implemented
+- create link command helper: implemented
+- destroy link command helper: implemented
+- undo stack: not implemented
+- redo stack: not implemented
+- transaction batching: not implemented
+- schema-aware command helpers: not implemented
+
 ## Build
 
 ```sh
