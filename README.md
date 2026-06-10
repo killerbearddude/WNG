@@ -29,6 +29,17 @@ Current WNG-0.2 status:
 
 Import/export operate only on in-memory DTOs and do not define a file format.
 
+## Schema status
+
+WNG includes a schema foundation for node and port definitions.
+
+Current schema status:
+
+- node definition registration: implemented
+- port definition storage: implemented
+- schema-aware graph mutation: not yet implemented
+- host validation callbacks: not yet implemented
+
 ## Build
 
 ```sh
