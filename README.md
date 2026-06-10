@@ -41,7 +41,7 @@ Current schema status:
 - schema-aware node creation helper: implemented
 - schema-aware port creation helper: implemented
 - schema-aware link creation helper: implemented
-- automatic node instantiation from full definitions: not yet implemented
+- schema-defined node instantiation: implemented
 - host validation callbacks: not yet implemented
 
 ## Node type identity
@@ -51,7 +51,9 @@ Graph nodes carry a stable `type` string distinct from display title.
 The `type` field is intended to identify the schema/domain node definition,
 while `title` remains display-facing text.
 
-Schema-aware graph mutation is not yet implemented.
+Schema-aware graph mutation is implemented through opt-in free helpers.
+
+`instantiate_node` creates a node and its schema-declared ports. It does not auto-fill display titles from schema definitions and does not create links.
 
 ## Build
 

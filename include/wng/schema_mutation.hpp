@@ -19,6 +19,17 @@ namespace wng
         const NodeDesc& desc,
         NodeId* out_id);
 
+    // Creates a schema-defined node and all ports declared by its NodeDefinition.
+    // The operation is failure-atomic from the caller's perspective: if any port
+    // cannot be created, the helper destroys the partially-created node before
+    // returning failure.
+    Result instantiate_node(
+        Graph& graph,
+        const GraphSchema& schema,
+        const NodeDesc& desc,
+        NodeId* out_id,
+        GraphMutationSummary* out_rollback_summary);
+
     // Adds a port only if the target node's schema definition contains a matching
     // enabled port definition. This prevents schema-aware callers from adding ports
     // that the node type does not declare.
