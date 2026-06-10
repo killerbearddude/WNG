@@ -23,7 +23,7 @@ WNG-0.2 begins serialization support with format-agnostic in-memory DTO types.
 Current WNG-0.2 status:
 
 - DTO type declarations: implemented
-- graph export: not yet implemented
+- graph export: implemented
 - graph import: not yet implemented
 - file I/O: intentionally out of scope
 

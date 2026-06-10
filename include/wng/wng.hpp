@@ -9,4 +9,5 @@
 #include <wng/port.hpp>
 #include <wng/result.hpp>
 #include <wng/serialization_dto.hpp>
+#include <wng/serialization.hpp>
 #include <wng/validation.hpp>
