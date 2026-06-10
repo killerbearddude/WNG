@@ -79,7 +79,7 @@ Current traversal status:
 - deterministic topological sort for acyclic graphs: implemented
 - cycle reporting for topological sort: implemented
 - cycle rejection as graph validation policy: not implemented
-- execution planning: not yet implemented
+- execution planning: implemented
 
 ## Dependency analysis status
 
@@ -94,7 +94,21 @@ Current dependency analysis status:
 - dirty propagation from changed ports: implemented
 - dirty propagation from changed links: implemented
 - stored dirty flags: not implemented
-- execution planning: not yet implemented
+- execution planning: implemented
+
+## Execution planning status
+
+WNG includes deterministic, non-executing execution plan construction.
+
+Current execution planning status:
+
+- whole-graph execution planning: implemented
+- dirty-subgraph execution planning: implemented
+- dependency/dependent step metadata: implemented
+- runtime node evaluation: not implemented
+- evaluator callbacks: not implemented
+- stored execution state: not implemented
+- threaded/asynchronous scheduling: not implemented
 
 ## Build
 
