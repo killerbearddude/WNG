@@ -30,6 +30,7 @@ namespace
 int main()
 {
     const std::vector<std::string> headers {
+        "include/wng/dirty_propagation.hpp",
         "include/wng/ids.hpp",
         "include/wng/math.hpp",
         "include/wng/result.hpp",

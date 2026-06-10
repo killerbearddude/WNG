@@ -80,7 +80,21 @@ Current traversal status:
 - cycle reporting for topological sort: implemented
 - cycle rejection as graph validation policy: not implemented
 - execution planning: not yet implemented
-- dirty propagation: not yet implemented
+
+## Dependency analysis status
+
+WNG includes deterministic traversal and dirty propagation helpers.
+
+Current dependency analysis status:
+
+- upstream reachability: implemented
+- downstream reachability: implemented
+- deterministic topological sort: implemented
+- dirty propagation from changed nodes: implemented
+- dirty propagation from changed ports: implemented
+- dirty propagation from changed links: implemented
+- stored dirty flags: not implemented
+- execution planning: not yet implemented
 
 ## Build
 
