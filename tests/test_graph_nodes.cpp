@@ -18,6 +18,7 @@ int main()
     assert(graph.nodes().size() == 1U);
     assert(graph.find_node(node) != nullptr);
     assert(graph.find_node(node)->title == "Alpha");
+    assert(graph.find_node(node)->type.empty());
 
     wng::NodeDesc invalid = desc;
     invalid.position.x = std::nanf("");
@@ -44,6 +45,17 @@ int main()
     wng::NodeId next;
     assert(graph.create_node(desc, &next) == wng::Result::Ok);
     assert(next.value == 2U);
+
+    wng::NodeDesc typed = desc;
+    typed.type = "math.add";
+    typed.title = "Add";
+    wng::NodeId typed_node_id;
+    assert(graph.create_node(typed, &typed_node_id) == wng::Result::Ok);
+    assert(typed_node_id.value == 3U);
+    const wng::Node* typed_node = graph.find_node(typed_node_id);
+    assert(typed_node != nullptr);
+    assert(typed_node->type == "math.add");
+    assert(typed_node->title == "Add");
 
     return 0;
 }

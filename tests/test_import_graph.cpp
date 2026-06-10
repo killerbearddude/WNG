@@ -7,10 +7,11 @@
 
 namespace
 {
-    wng::NodeDto make_node(wng::NodeId id, const char* title)
+    wng::NodeDto make_node(wng::NodeId id, const char* title, const char* type = "")
     {
         wng::NodeDto node;
         node.id = id;
+        node.type = type;
         node.title = title;
         node.position = wng::Vec2 { static_cast<float>(id.value), static_cast<float>(id.value + 1U) };
         node.size = wng::Vec2 { 100.0f, 50.0f };
@@ -41,12 +42,12 @@ namespace
     {
         wng::GraphDto dto;
 
-        wng::NodeDto source = make_node(wng::NodeId { 1 }, "Source");
+        wng::NodeDto source = make_node(wng::NodeId { 1 }, "Source", "constant.number");
         source.visible = false;
         source.enabled = true;
         source.outputs.push_back(wng::PortId { 1 });
 
-        wng::NodeDto sink = make_node(wng::NodeId { 2 }, "Sink");
+        wng::NodeDto sink = make_node(wng::NodeId { 2 }, "Sink", "debug.print");
         sink.position = wng::Vec2 { 240.0f, 20.0f };
         sink.size = wng::Vec2 { 120.0f, 60.0f };
         sink.inputs.push_back(wng::PortId { 2 });
@@ -80,6 +81,7 @@ namespace
         assert(graph.links().size() == 1U);
 
         assert(graph.nodes()[0].id == wng::NodeId { 1 });
+        assert(graph.nodes()[0].type == "constant.number");
         assert(graph.nodes()[0].title == "Source");
         assert(graph.nodes()[0].position.x == 1.0f);
         assert(graph.nodes()[0].position.y == 2.0f);
@@ -91,6 +93,7 @@ namespace
         assert(graph.nodes()[0].enabled == true);
 
         assert(graph.nodes()[1].id == wng::NodeId { 2 });
+        assert(graph.nodes()[1].type == "debug.print");
         assert(graph.nodes()[1].title == "Sink");
         assert(graph.nodes()[1].position.x == 240.0f);
         assert(graph.nodes()[1].position.y == 20.0f);
@@ -131,6 +134,7 @@ namespace
 
         for (std::vector<wng::NodeDto>::size_type i = 0; i < a.nodes.size(); ++i) {
             assert(a.nodes[i].id == b.nodes[i].id);
+            assert(a.nodes[i].type == b.nodes[i].type);
             assert(a.nodes[i].title == b.nodes[i].title);
             assert(a.nodes[i].position.x == b.nodes[i].position.x);
             assert(a.nodes[i].position.y == b.nodes[i].position.y);
@@ -232,6 +236,7 @@ int main()
     {
         wng::Graph destination;
         wng::NodeDesc original_desc;
+        original_desc.type = "original.type";
         original_desc.title = "Original";
         wng::NodeId original;
         assert(destination.create_node(original_desc, &original) == wng::Result::Ok);
@@ -243,6 +248,7 @@ int main()
 
         assert(destination.nodes().size() == 1U);
         assert(destination.nodes()[0].id == original);
+        assert(destination.nodes()[0].type == "original.type");
         assert(destination.nodes()[0].title == "Original");
         assert(destination.ports().empty());
         assert(destination.links().empty());
@@ -373,8 +379,16 @@ int main()
         wng::Graph source;
         wng::NodeId left;
         wng::NodeId right;
-        assert(source.create_node(wng::NodeDesc {}, &left) == wng::Result::Ok);
-        assert(source.create_node(wng::NodeDesc {}, &right) == wng::Result::Ok);
+
+        wng::NodeDesc left_desc;
+        left_desc.type = "constant.number";
+        left_desc.title = "Constant";
+        assert(source.create_node(left_desc, &left) == wng::Result::Ok);
+
+        wng::NodeDesc right_desc;
+        right_desc.type = "debug.print";
+        right_desc.title = "Print";
+        assert(source.create_node(right_desc, &right) == wng::Result::Ok);
 
         wng::PortDesc output;
         output.kind = wng::PortKind::Output;

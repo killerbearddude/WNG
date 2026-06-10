@@ -137,6 +137,7 @@ namespace wng
             for (const Node& node : graph.nodes()) {
                 NodeDto dto;
                 dto.id = node.id;
+                dto.type = node.type;
                 dto.title = node.title;
                 dto.position = node.position;
                 dto.size = node.size;
@@ -313,6 +314,7 @@ namespace wng
             for (const NodeDto& node_dto : dto.nodes) {
                 Node node;
                 node.id = node_dto.id;
+                node.type = node_dto.type;
                 node.title = node_dto.title;
                 node.position = node_dto.position;
                 node.size = node_dto.size;

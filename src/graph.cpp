@@ -67,6 +67,7 @@ namespace wng
         try {
             Node node;
             node.id = NodeId { next_node_id_ };
+            node.type = desc.type;
             node.title = desc.title;
             node.position = desc.position;
             node.size = desc.size;

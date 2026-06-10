@@ -40,6 +40,15 @@ Current schema status:
 - schema-aware graph mutation: not yet implemented
 - host validation callbacks: not yet implemented
 
+## Node type identity
+
+Graph nodes carry a stable `type` string distinct from display title.
+
+The `type` field is intended to identify the schema/domain node definition,
+while `title` remains display-facing text.
+
+Schema-aware graph mutation is not yet implemented.
+
 ## Build
 
 ```sh

@@ -10,6 +10,7 @@ namespace wng
 {
     struct Node {
         NodeId id;
+        std::string type;
         std::string title;
         Vec2 position;
         Vec2 size;
@@ -20,6 +21,7 @@ namespace wng
     };
 
     struct NodeDesc {
+        std::string type;
         std::string title;
         Vec2 position {};
         Vec2 size {};

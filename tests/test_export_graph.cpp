@@ -8,6 +8,7 @@ namespace
 {
     wng::NodeId create_node(
         wng::Graph& graph,
+        const std::string& type,
         const std::string& title,
         wng::Vec2 position,
         wng::Vec2 size,
@@ -15,6 +16,7 @@ namespace
         bool enabled)
     {
         wng::NodeDesc desc;
+        desc.type = type;
         desc.title = title;
         desc.position = position;
         desc.size = size;
@@ -68,6 +70,7 @@ int main()
 
         const wng::NodeId source = create_node(
             graph,
+            "constant.number",
             "Source",
             wng::Vec2 { 10.0f, 20.0f },
             wng::Vec2 { 100.0f, 50.0f },
@@ -76,6 +79,7 @@ int main()
 
         const wng::NodeId sink = create_node(
             graph,
+            "debug.print",
             "Sink",
             wng::Vec2 { 240.0f, 20.0f },
             wng::Vec2 { 120.0f, 60.0f },
@@ -111,6 +115,7 @@ int main()
         assert(dto.links.size() == 1);
 
         assert(dto.nodes[0].id == source);
+        assert(dto.nodes[0].type == "constant.number");
         assert(dto.nodes[0].title == "Source");
         assert(dto.nodes[0].position.x == 10.0f);
         assert(dto.nodes[0].position.y == 20.0f);
@@ -122,6 +127,7 @@ int main()
         assert(dto.nodes[0].enabled == true);
 
         assert(dto.nodes[1].id == sink);
+        assert(dto.nodes[1].type == "debug.print");
         assert(dto.nodes[1].title == "Sink");
         assert(dto.nodes[1].inputs.size() == 1);
         assert(dto.nodes[1].inputs[0] == input);

@@ -16,6 +16,7 @@ int main()
 
     wng::NodeDto node;
     node.id = wng::NodeId { 1 };
+    node.type = "constant.number";
     node.title = "Source";
     node.position = wng::Vec2 { 10.0f, 20.0f };
     node.size = wng::Vec2 { 100.0f, 50.0f };
@@ -30,6 +31,7 @@ int main()
 
     wng::NodeDto sink;
     sink.id = wng::NodeId { 2 };
+    sink.type = "debug.print";
     sink.title = "Sink";
     sink.position = wng::Vec2 { 240.0f, 20.0f };
     sink.size = wng::Vec2 { 100.0f, 50.0f };
@@ -58,8 +60,10 @@ int main()
     assert(dto.links.size() == 1);
 
     assert(dto.nodes[0].id == wng::NodeId { 1 });
+    assert(dto.nodes[0].type == "constant.number");
     assert(dto.nodes[0].outputs[0] == wng::PortId { 1 });
     assert(dto.nodes[1].inputs[0] == wng::PortId { 2 });
+    assert(dto.nodes[1].type == "debug.print");
 
     assert(dto.ports[0].kind == wng::PortKind::Output);
     assert(dto.ports[1].kind == wng::PortKind::Input);
