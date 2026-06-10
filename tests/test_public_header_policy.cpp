@@ -37,6 +37,7 @@ int main()
         "include/wng/port.hpp",
         "include/wng/link.hpp",
         "include/wng/mutation_summary.hpp",
+        "include/wng/serialization_dto.hpp",
         "include/wng/validation.hpp",
         "include/wng/graph.hpp",
         "include/wng/wng.hpp"
