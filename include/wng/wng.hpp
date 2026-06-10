@@ -2,6 +2,7 @@
 
 #include <wng/graph.hpp>
 #include <wng/graph_validation.hpp>
+#include <wng/graph_traversal.hpp>
 #include <wng/ids.hpp>
 #include <wng/link.hpp>
 #include <wng/math.hpp>
