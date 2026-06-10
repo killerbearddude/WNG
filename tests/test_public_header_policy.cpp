@@ -39,6 +39,7 @@ int main()
         "include/wng/mutation_summary.hpp",
         "include/wng/serialization_dto.hpp",
         "include/wng/serialization.hpp",
+        "include/wng/schema.hpp",
         "include/wng/validation.hpp",
         "include/wng/graph.hpp",
         "include/wng/wng.hpp"
