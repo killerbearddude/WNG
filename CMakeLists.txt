@@ -58,6 +58,7 @@ wng_add_test(test_import_graph tests/test_import_graph.cpp)
 wng_add_test(test_schema tests/test_schema.cpp)
 wng_add_test(test_schema_validation tests/test_schema_validation.cpp)
 wng_add_test(test_schema_mutation tests/test_schema_mutation.cpp)
+wng_add_test(test_schema_node_port_mutation tests/test_schema_node_port_mutation.cpp)
 set_tests_properties(test_public_header_policy PROPERTIES
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
