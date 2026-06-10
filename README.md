@@ -16,6 +16,17 @@ WNG-0.1 implements only the graph-core milestone:
 WNG-0.1 intentionally does not include WPL integration, rendering, editor state,
 selection, hit testing, serialization, undo/redo, replay, platform code, or X11.
 
+## WNG-0.2 status
+
+WNG-0.2 begins serialization support with format-agnostic in-memory DTO types.
+
+Current WNG-0.2 status:
+
+- DTO type declarations: implemented
+- graph export: not yet implemented
+- graph import: not yet implemented
+- file I/O: intentionally out of scope
+
 ## Build
 
 ```sh
