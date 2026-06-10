@@ -104,6 +104,7 @@ Current execution planning status:
 
 - whole-graph execution planning: implemented
 - dirty-subgraph execution planning: implemented
+- schema-aware execution planning: implemented
 - dependency/dependent step metadata: implemented
 - runtime node evaluation: not implemented
 - evaluator callbacks: not implemented
