@@ -55,6 +55,19 @@ Schema-aware graph mutation is implemented through opt-in free helpers.
 
 `instantiate_node` creates a node and its schema-declared ports. It does not auto-fill display titles from schema definitions and does not create links.
 
+## Validation status
+
+WNG includes built-in connection validation and schema-aware connection validation.
+
+Current validation status:
+
+- built-in connection validation: implemented
+- schema-aware connection validation: implemented
+- whole-graph structural validation: implemented
+- whole-graph schema validation: implemented
+- cycle validation: not yet implemented
+- host validation callbacks: not yet implemented
+
 ## Build
 
 ```sh

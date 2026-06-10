@@ -44,6 +44,7 @@ int main()
         "include/wng/schema_validation.hpp",
         "include/wng/validation.hpp",
         "include/wng/graph.hpp",
+        "include/wng/graph_validation.hpp",
         "include/wng/wng.hpp"
     };
 
