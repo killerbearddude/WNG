@@ -13,6 +13,11 @@
 
 namespace wng
 {
+    struct GraphDto;
+    class Graph;
+
+    Result import_graph(const GraphDto& dto, Graph* out_graph);
+
     class Graph {
     public:
         Result create_node(const NodeDesc& desc, NodeId* out_id);
@@ -39,6 +44,8 @@ namespace wng
         const std::vector<Link>& links() const;
 
     private:
+        friend Result import_graph(const GraphDto& dto, Graph* out_graph);
+
         std::vector<Node> nodes_;
         std::vector<Port> ports_;
         std::vector<Link> links_;

@@ -24,8 +24,10 @@ Current WNG-0.2 status:
 
 - DTO type declarations: implemented
 - graph export: implemented
-- graph import: not yet implemented
+- graph import: implemented
 - file I/O: intentionally out of scope
+
+Import/export operate only on in-memory DTOs and do not define a file format.
 
 ## Build
 
