@@ -68,6 +68,20 @@ Current validation status:
 - cycle validation: not yet implemented
 - host validation callbacks: not yet implemented
 
+## Traversal status
+
+WNG includes deterministic, non-mutating traversal helpers.
+
+Current traversal status:
+
+- downstream reachability: implemented
+- upstream reachability: implemented
+- deterministic topological sort for acyclic graphs: implemented
+- cycle reporting for topological sort: implemented
+- cycle rejection as graph validation policy: not implemented
+- execution planning: not yet implemented
+- dirty propagation: not yet implemented
+
 ## Build
 
 ```sh
