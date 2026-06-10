@@ -9,6 +9,7 @@ add_library(wng_core
     src/serialization.cpp
     src/schema.cpp
     src/schema_validation.cpp
+    src/schema_mutation.cpp
 )
 
 target_include_directories(wng_core
@@ -56,6 +57,7 @@ wng_add_test(test_export_graph tests/test_export_graph.cpp)
 wng_add_test(test_import_graph tests/test_import_graph.cpp)
 wng_add_test(test_schema tests/test_schema.cpp)
 wng_add_test(test_schema_validation tests/test_schema_validation.cpp)
+wng_add_test(test_schema_mutation tests/test_schema_mutation.cpp)
 set_tests_properties(test_public_header_policy PROPERTIES
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
@@ -91,6 +93,7 @@ wng_add_header_compile_test(test_header_serialization_dto wng/serialization_dto.
 wng_add_header_compile_test(test_header_serialization wng/serialization.hpp)
 wng_add_header_compile_test(test_header_schema wng/schema.hpp)
 wng_add_header_compile_test(test_header_schema_validation wng/schema_validation.hpp)
+wng_add_header_compile_test(test_header_schema_mutation wng/schema_mutation.hpp)
 wng_add_header_compile_test(test_header_validation wng/validation.hpp)
 wng_add_header_compile_test(test_header_graph wng/graph.hpp)
 wng_add_header_compile_test(test_header_wng wng/wng.hpp)
