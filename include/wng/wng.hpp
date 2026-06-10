@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wng/graph.hpp>
+#include <wng/graph_validation.hpp>
 #include <wng/ids.hpp>
 #include <wng/link.hpp>
 #include <wng/math.hpp>
