@@ -37,6 +37,7 @@ Current schema status:
 
 - node definition registration: implemented
 - port definition storage: implemented
+- schema-aware connection validation: implemented
 - schema-aware graph mutation: not yet implemented
 - host validation callbacks: not yet implemented
 
