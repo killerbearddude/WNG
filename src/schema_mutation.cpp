@@ -3,6 +3,7 @@
 // and lets callers opt into schema policy only when they have a GraphSchema.
 
 #include <string>
+#include <vector>
 
 #include <wng/schema_mutation.hpp>
 
@@ -57,6 +58,113 @@ namespace
 
         return false;
     }
+
+    bool contains_duplicate_port_name(const std::vector<wng::PortDefinition>& definitions)
+    {
+        for (std::vector<wng::PortDefinition>::size_type i = 0; i < definitions.size(); ++i) {
+            for (std::vector<wng::PortDefinition>::size_type j = i + 1; j < definitions.size(); ++j) {
+                if (definitions[i].name == definitions[j].name) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    wng::Result validate_port_definitions(
+        const std::vector<wng::PortDefinition>& definitions,
+        wng::PortKind required_kind)
+    {
+        for (const wng::PortDefinition& definition : definitions) {
+            if (!is_valid_port_kind(definition.kind) || definition.kind != required_kind) {
+                return wng::Result::InvalidArgument;
+            }
+
+            if (!definition.enabled) {
+                return wng::Result::InvalidConnection;
+            }
+        }
+
+        if (contains_duplicate_port_name(definitions)) {
+            return wng::Result::AlreadyExists;
+        }
+
+        return wng::Result::Ok;
+    }
+
+    wng::Result validate_instantiable_definition(const wng::NodeDefinition& definition)
+    {
+        if (!definition.enabled) {
+            return wng::Result::InvalidConnection;
+        }
+
+        // Validate the full schema definition before mutating Graph so malformed
+        // definitions cannot leave behind a partially-instantiated node.
+        const wng::Result input_result =
+            validate_port_definitions(definition.inputs, wng::PortKind::Input);
+        if (input_result != wng::Result::Ok) {
+            return input_result;
+        }
+
+        return validate_port_definitions(definition.outputs, wng::PortKind::Output);
+    }
+
+    wng::PortDesc make_port_desc(const wng::PortDefinition& definition)
+    {
+        wng::PortDesc desc;
+        desc.kind = definition.kind;
+        desc.name = definition.name;
+        desc.type = definition.type;
+        desc.visible = definition.visible;
+        desc.enabled = definition.enabled;
+        return desc;
+    }
+
+    wng::Result add_definition_ports(
+        wng::Graph& graph,
+        const wng::GraphSchema& schema,
+        wng::NodeId node,
+        const std::vector<wng::PortDefinition>& definitions)
+    {
+        for (const wng::PortDefinition& definition : definitions) {
+            wng::PortId port;
+            const wng::Result result =
+                wng::add_port(graph, schema, node, make_port_desc(definition), &port);
+            if (result != wng::Result::Ok) {
+                return result;
+            }
+        }
+
+        return wng::Result::Ok;
+    }
+
+    void publish_rollback_summary(
+        const wng::GraphMutationSummary& rollback,
+        wng::GraphMutationSummary* out_rollback_summary)
+    {
+        if (out_rollback_summary != nullptr) {
+            *out_rollback_summary = rollback;
+        }
+    }
+
+    wng::Result rollback_instantiated_node(
+        wng::Graph& graph,
+        wng::NodeId created_node,
+        wng::Result original_result,
+        wng::GraphMutationSummary* out_rollback_summary)
+    {
+        wng::GraphMutationSummary rollback;
+        const wng::Result rollback_result = graph.destroy_node(created_node, &rollback);
+        if (rollback_result != wng::Result::Ok) {
+            return rollback_result;
+        }
+
+        // Rollback details are published only after partial graph state is removed.
+        // This makes the summary meaningful only for post-node-creation failures.
+        publish_rollback_summary(rollback, out_rollback_summary);
+        return original_result;
+    }
 }
 
 namespace wng
@@ -87,6 +195,61 @@ namespace wng
         // Schema-aware creation validates policy before calling Graph. Graph then
         // remains responsible for structural checks such as geometry and ID allocation.
         return graph.create_node(desc, out_id);
+    }
+
+    Result instantiate_node(
+        Graph& graph,
+        const GraphSchema& schema,
+        const NodeDesc& desc,
+        NodeId* out_id,
+        GraphMutationSummary* out_rollback_summary)
+    {
+        if (out_id == nullptr) {
+            return Result::InvalidArgument;
+        }
+
+        if (desc.type.empty()) {
+            return Result::InvalidArgument;
+        }
+
+        const NodeDefinition* definition = schema.find_node_definition(desc.type);
+        if (definition == nullptr) {
+            return Result::NotFound;
+        }
+
+        const Result definition_result = validate_instantiable_definition(*definition);
+        if (definition_result != Result::Ok) {
+            return definition_result;
+        }
+
+        NodeId created_node;
+        const Result node_result = create_node(graph, schema, desc, &created_node);
+        if (node_result != Result::Ok) {
+            return node_result;
+        }
+
+        const Result input_result =
+            add_definition_ports(graph, schema, created_node, definition->inputs);
+        if (input_result != Result::Ok) {
+            return rollback_instantiated_node(
+                graph,
+                created_node,
+                input_result,
+                out_rollback_summary);
+        }
+
+        const Result output_result =
+            add_definition_ports(graph, schema, created_node, definition->outputs);
+        if (output_result != Result::Ok) {
+            return rollback_instantiated_node(
+                graph,
+                created_node,
+                output_result,
+                out_rollback_summary);
+        }
+
+        *out_id = created_node;
+        return Result::Ok;
     }
 
     Result add_port(
