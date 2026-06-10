@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <wng/graph_command.hpp>
+#include <wng/schema_mutation.hpp>
 
 namespace
 {
@@ -12,6 +13,58 @@ namespace
     {
         command.result = result;
         command.record.result = result;
+    }
+
+    void snapshot_created_node(
+        const wng::Graph& graph,
+        wng::NodeId node,
+        wng::GraphCommandRecord& record)
+    {
+        const wng::Node* created_node = graph.find_node(node);
+        if (created_node != nullptr) {
+            record.created_nodes.push_back(*created_node);
+        }
+    }
+
+    void snapshot_created_port(
+        const wng::Graph& graph,
+        wng::PortId port,
+        wng::GraphCommandRecord& record)
+    {
+        const wng::Port* created_port = graph.find_port(port);
+        if (created_port != nullptr) {
+            record.created_ports.push_back(*created_port);
+        }
+    }
+
+    void snapshot_created_link(
+        const wng::Graph& graph,
+        wng::LinkId link,
+        wng::GraphCommandRecord& record)
+    {
+        const wng::Link* created_link = graph.find_link(link);
+        if (created_link != nullptr) {
+            record.created_links.push_back(*created_link);
+        }
+    }
+
+    void snapshot_created_node_with_ports(
+        const wng::Graph& graph,
+        wng::NodeId node,
+        wng::GraphCommandRecord& record)
+    {
+        const wng::Node* created_node = graph.find_node(node);
+        if (created_node == nullptr) {
+            return;
+        }
+
+        record.created_nodes.push_back(*created_node);
+
+        for (const wng::Port& port : graph.ports()) {
+            if (port.node == node) {
+                record.created_ports.push_back(port);
+            }
+        }
     }
 
     bool port_owned_by_node(const wng::Port& port, wng::NodeId node)
@@ -116,6 +169,7 @@ namespace wng
 
         if (create_result == Result::Ok) {
             command.record.node = node;
+            snapshot_created_node(graph, node, command.record);
         }
 
         return command;
@@ -162,6 +216,7 @@ namespace wng
 
         if (add_result == Result::Ok) {
             command.record.port = port;
+            snapshot_created_port(graph, port, command.record);
         }
 
         return command;
@@ -205,6 +260,7 @@ namespace wng
 
         if (create_result == Result::Ok) {
             command.record.link = link;
+            snapshot_created_link(graph, link, command.record);
         }
 
         return command;
@@ -232,4 +288,99 @@ namespace wng
 
         return command;
     }
+
+    GraphCommandResult command_create_node(
+        Graph& graph,
+        const GraphSchema& schema,
+        const NodeDesc& desc)
+    {
+        GraphCommandResult command;
+        command.record.kind = GraphCommandKind::SchemaCreateNode;
+        command.record.node_desc = desc;
+
+        NodeId node;
+        const Result create_result = wng::create_node(graph, schema, desc, &node);
+        set_result(command, create_result);
+
+        if (create_result == Result::Ok) {
+            command.record.node = node;
+            snapshot_created_node(graph, node, command.record);
+        }
+
+        return command;
+    }
+
+    GraphCommandResult command_instantiate_node(
+        Graph& graph,
+        const GraphSchema& schema,
+        const NodeDesc& desc)
+    {
+        GraphCommandResult command;
+        command.record.kind = GraphCommandKind::SchemaInstantiateNode;
+        command.record.node_desc = desc;
+
+        NodeId node;
+        GraphMutationSummary rollback_summary;
+
+        // Schema-aware command helpers delegate all schema policy to
+        // schema_mutation.hpp. Commands record results, but they do not validate
+        // schema rules themselves and they do not own command history.
+        const Result instantiate_result =
+            wng::instantiate_node(graph, schema, desc, &node, &rollback_summary);
+        set_result(command, instantiate_result);
+
+        if (instantiate_result == Result::Ok) {
+            command.record.node = node;
+            snapshot_created_node_with_ports(graph, node, command.record);
+        } else {
+            command.record.summary = rollback_summary;
+        }
+
+        return command;
+    }
+
+    GraphCommandResult command_add_port(
+        Graph& graph,
+        const GraphSchema& schema,
+        NodeId node,
+        const PortDesc& desc)
+    {
+        GraphCommandResult command;
+        command.record.kind = GraphCommandKind::SchemaAddPort;
+        command.record.node = node;
+        command.record.port_desc = desc;
+
+        PortId port;
+        const Result add_result = wng::add_port(graph, schema, node, desc, &port);
+        set_result(command, add_result);
+
+        if (add_result == Result::Ok) {
+            command.record.port = port;
+            snapshot_created_port(graph, port, command.record);
+        }
+
+        return command;
+    }
+
+    GraphCommandResult command_create_link(
+        Graph& graph,
+        const GraphSchema& schema,
+        PortId from,
+        PortId to)
+    {
+        GraphCommandResult command;
+        command.record.kind = GraphCommandKind::SchemaCreateLink;
+
+        LinkId link;
+        const Result create_result = wng::create_link(graph, schema, from, to, &link);
+        set_result(command, create_result);
+
+        if (create_result == Result::Ok) {
+            command.record.link = link;
+            snapshot_created_link(graph, link, command.record);
+        }
+
+        return command;
+    }
+
 }

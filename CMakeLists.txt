@@ -70,6 +70,7 @@ wng_add_test(test_graph_traversal tests/test_graph_traversal.cpp)
 wng_add_test(test_dirty_propagation tests/test_dirty_propagation.cpp)
 wng_add_test(test_execution_plan tests/test_execution_plan.cpp)
 wng_add_test(test_graph_command tests/test_graph_command.cpp)
+wng_add_test(test_schema_graph_command tests/test_schema_graph_command.cpp)
 set_tests_properties(test_public_header_policy PROPERTIES
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )

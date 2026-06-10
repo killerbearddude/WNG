@@ -117,17 +117,13 @@ WNG includes command-style mutation helpers that record mutation results for fut
 
 Current command status:
 
-- command result records: implemented
-- create node command helper: implemented
-- destroy node command helper: implemented
-- add port command helper: implemented
-- remove port command helper: implemented
-- create link command helper: implemented
-- destroy link command helper: implemented
+- graph command result records: implemented
+- graph-only create/destroy command helpers: implemented
+- schema-aware command helpers: implemented
+- schema-defined instantiate-node command helper: implemented
 - undo stack: not implemented
 - redo stack: not implemented
 - transaction batching: not implemented
-- schema-aware command helpers: not implemented
 
 ## Build
 

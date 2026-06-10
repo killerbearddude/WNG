@@ -12,13 +12,22 @@
 
 namespace wng
 {
+    class GraphSchema;
+}
+
+namespace wng
+{
     enum class GraphCommandKind {
         CreateNode,
         DestroyNode,
         AddPort,
         RemovePort,
         CreateLink,
-        DestroyLink
+        DestroyLink,
+        SchemaCreateNode,
+        SchemaInstantiateNode,
+        SchemaAddPort,
+        SchemaCreateLink
     };
 
     struct GraphCommandRecord {
@@ -31,6 +40,10 @@ namespace wng
 
         NodeDesc node_desc;
         PortDesc port_desc;
+
+        std::vector<Node> created_nodes;
+        std::vector<Port> created_ports;
+        std::vector<Link> created_links;
 
         std::vector<Node> removed_nodes;
         std::vector<Port> removed_ports;
@@ -82,4 +95,34 @@ namespace wng
     GraphCommandResult command_destroy_link(
         Graph& graph,
         LinkId link);
+
+    // Executes schema-aware node creation and records the created node id plus the
+    // descriptor. This helper preserves Graph's schema-free core by delegating to
+    // the schema mutation layer.
+    GraphCommandResult command_create_node(
+        Graph& graph,
+        const GraphSchema& schema,
+        const NodeDesc& desc);
+
+    // Executes schema-defined node instantiation and records created node and port
+    // snapshots after success. Rollback summary is recorded on failure.
+    GraphCommandResult command_instantiate_node(
+        Graph& graph,
+        const GraphSchema& schema,
+        const NodeDesc& desc);
+
+    // Executes schema-aware port creation and records the created port id plus the
+    // descriptor. The schema layer decides whether the node type permits the port.
+    GraphCommandResult command_add_port(
+        Graph& graph,
+        const GraphSchema& schema,
+        NodeId node,
+        const PortDesc& desc);
+
+    // Executes schema-aware link creation and records the created link id.
+    GraphCommandResult command_create_link(
+        Graph& graph,
+        const GraphSchema& schema,
+        PortId from,
+        PortId to);
 }
