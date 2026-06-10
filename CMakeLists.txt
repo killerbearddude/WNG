@@ -12,6 +12,7 @@ add_library(wng_core
     src/schema_mutation.cpp
     src/graph_validation.cpp
     src/graph_traversal.cpp
+    src/dirty_propagation.cpp
 )
 
 target_include_directories(wng_core
@@ -64,6 +65,7 @@ wng_add_test(test_schema_node_port_mutation tests/test_schema_node_port_mutation
 wng_add_test(test_schema_node_instantiation tests/test_schema_node_instantiation.cpp)
 wng_add_test(test_graph_validation tests/test_graph_validation.cpp)
 wng_add_test(test_graph_traversal tests/test_graph_traversal.cpp)
+wng_add_test(test_dirty_propagation tests/test_dirty_propagation.cpp)
 set_tests_properties(test_public_header_policy PROPERTIES
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
@@ -102,6 +104,7 @@ wng_add_header_compile_test(test_header_schema_validation wng/schema_validation.
 wng_add_header_compile_test(test_header_schema_mutation wng/schema_mutation.hpp)
 wng_add_header_compile_test(test_header_graph_validation wng/graph_validation.hpp)
 wng_add_header_compile_test(test_header_graph_traversal wng/graph_traversal.hpp)
+wng_add_header_compile_test(test_header_dirty_propagation wng/dirty_propagation.hpp)
 wng_add_header_compile_test(test_header_validation wng/validation.hpp)
 wng_add_header_compile_test(test_header_graph wng/graph.hpp)
 wng_add_header_compile_test(test_header_wng wng/wng.hpp)

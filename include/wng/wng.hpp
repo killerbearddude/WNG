@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wng/dirty_propagation.hpp>
 #include <wng/graph.hpp>
 #include <wng/graph_validation.hpp>
 #include <wng/graph_traversal.hpp>
