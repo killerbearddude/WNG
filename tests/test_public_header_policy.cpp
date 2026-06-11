@@ -42,6 +42,7 @@ int main()
         "include/wng/serialization_dto.hpp",
         "include/wng/serialization.hpp",
         "include/wng/schema.hpp",
+        "include/wng/schema_snapshot.hpp",
         "include/wng/schema_mutation.hpp",
         "include/wng/schema_validation.hpp",
         "include/wng/validation.hpp",
