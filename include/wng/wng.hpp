@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wng/graph_command.hpp>
+#include <wng/graph_restore.hpp>
 #include <wng/dirty_propagation.hpp>
 #include <wng/execution_plan.hpp>
 #include <wng/graph.hpp>

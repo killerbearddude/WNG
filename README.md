@@ -127,6 +127,21 @@ Current command status:
 - transaction execution: not implemented
 - automatic rollback: not implemented
 
+## Restoration status
+
+WNG includes an object restoration helper for future undo/redo integration.
+
+Current restoration status:
+
+- restore captured node snapshots: implemented
+- restore captured port snapshots: implemented
+- restore captured link snapshots: implemented
+- stable ID preservation during restore: implemented
+- atomic restore through DTO replacement: implemented
+- undo stack: not implemented
+- redo stack: not implemented
+- command replay: not implemented
+
 ## Build
 
 ```sh
