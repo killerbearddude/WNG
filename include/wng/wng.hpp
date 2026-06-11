@@ -16,6 +16,7 @@
 #include <wng/link.hpp>
 #include <wng/math.hpp>
 #include <wng/mutation_summary.hpp>
+#include <wng/graph_mutation_preview.hpp>
 #include <wng/node.hpp>
 #include <wng/port.hpp>
 #include <wng/result.hpp>

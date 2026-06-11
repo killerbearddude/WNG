@@ -197,6 +197,22 @@ Current graph diff status:
 - merge/conflict resolution: not implemented
 - editor visual diffing: not implemented
 
+
+## Mutation preview status
+
+WNG includes non-mutating previews for destructive graph mutations.
+
+Current mutation preview status:
+
+- preview destroy node consequences: implemented
+- preview remove port consequences: implemented
+- preview destroy link consequences: implemented
+- preview summary ordering matches mutation summary ordering: implemented
+- preview does not mutate graph state: implemented
+- host consequence-preview callbacks: not implemented
+- editor consequence UI: not implemented
+- selection cleanup integration: not implemented
+
 ## Build
 
 ```sh
