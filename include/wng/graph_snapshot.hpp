@@ -6,6 +6,7 @@
 
 #include <cstdint>
 
+#include <wng/graph_diff.hpp>
 #include <wng/result.hpp>
 #include <wng/serialization_dto.hpp>
 
@@ -48,4 +49,18 @@ namespace wng
     Result restore_graph_snapshot(
         Graph& graph,
         const GraphSnapshot& snapshot);
+
+    // Compares a live graph against an in-memory snapshot. The live graph is
+    // treated as the diff "before" graph, and the snapshot is restored into a
+    // temporary "after" graph before delegating to diff_graphs.
+    GraphDiff diff_graph_snapshot(
+        const Graph& graph,
+        const GraphSnapshot& snapshot);
+
+    // Compares two in-memory graph snapshots by restoring each into temporary
+    // graphs and delegating to diff_graphs. This is diagnostic glue only; it
+    // does not apply patches or define merge/conflict policy.
+    GraphDiff diff_graph_snapshots(
+        const GraphSnapshot& before,
+        const GraphSnapshot& after);
 }
