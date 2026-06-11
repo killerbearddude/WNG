@@ -225,6 +225,8 @@ Current graph snapshot status:
 - stable-ID preservation during restore: implemented
 - atomic graph replacement during restore: implemented
 - graph diff compatibility: implemented
+- live graph to snapshot diffing: implemented
+- snapshot to snapshot diffing: implemented
 - file I/O: not implemented
 - JSON serialization: not implemented
 - binary serialization: not implemented

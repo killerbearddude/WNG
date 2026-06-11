@@ -29,6 +29,24 @@ namespace
         snapshot_result.result = result;
         return snapshot_result;
     }
+
+    wng::GraphDiff snapshot_diff_failure(wng::Result result)
+    {
+        wng::GraphDiff diff;
+        diff.result = result;
+        return diff;
+    }
+
+    wng::Result restore_snapshot_to_temporary_graph(
+        const wng::GraphSnapshot& snapshot,
+        wng::Graph& out_graph)
+    {
+        // Snapshot diff helpers restore snapshots only into temporary graphs and
+        // delegate comparison to GraphDiff. This keeps GraphDiff as the single
+        // source of stable-ID comparison semantics and avoids DTO-specific diff
+        // logic in the snapshot layer.
+        return wng::restore_graph_snapshot(out_graph, snapshot);
+    }
 }
 
 namespace wng
@@ -93,6 +111,52 @@ namespace wng
             return Result::Ok;
         } catch (const std::bad_alloc&) {
             return Result::AllocationFailure;
+        }
+    }
+
+    GraphDiff diff_graph_snapshot(
+        const Graph& graph,
+        const GraphSnapshot& snapshot)
+    {
+        try {
+            Graph restored;
+            const Result restore_result =
+                restore_snapshot_to_temporary_graph(snapshot, restored);
+            if (restore_result != Result::Ok) {
+                return snapshot_diff_failure(restore_result);
+            }
+
+            // Direction is explicit: the live graph is "before" and the snapshot
+            // graph is "after". Live-only objects are therefore reported removed,
+            // while snapshot-only objects are reported added.
+            return diff_graphs(graph, restored);
+        } catch (const std::bad_alloc&) {
+            return snapshot_diff_failure(Result::AllocationFailure);
+        }
+    }
+
+    GraphDiff diff_graph_snapshots(
+        const GraphSnapshot& before,
+        const GraphSnapshot& after)
+    {
+        try {
+            Graph before_graph;
+            const Result before_result =
+                restore_snapshot_to_temporary_graph(before, before_graph);
+            if (before_result != Result::Ok) {
+                return snapshot_diff_failure(before_result);
+            }
+
+            Graph after_graph;
+            const Result after_result =
+                restore_snapshot_to_temporary_graph(after, after_graph);
+            if (after_result != Result::Ok) {
+                return snapshot_diff_failure(after_result);
+            }
+
+            return diff_graphs(before_graph, after_graph);
+        } catch (const std::bad_alloc&) {
+            return snapshot_diff_failure(Result::AllocationFailure);
         }
     }
 }
