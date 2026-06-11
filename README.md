@@ -142,6 +142,22 @@ Current restoration status:
 - redo stack: not implemented
 - command replay: not implemented
 
+## Undo/redo status
+
+WNG includes the first undo-application primitive for command records.
+
+Current undo/redo status:
+
+- command result records: implemented
+- command batch records: implemented
+- graph object restoration: implemented
+- undo single command record: implemented
+- undo command batch: implemented
+- undo stack: not implemented
+- redo stack: not implemented
+- command history ownership: not implemented
+- editor state undo: not implemented
+
 ## Build
 
 ```sh

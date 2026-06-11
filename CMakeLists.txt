@@ -16,6 +16,7 @@ add_library(wng_core
     src/execution_plan.cpp
     src/graph_command.cpp
     src/graph_restore.cpp
+    src/graph_undo.cpp
 )
 
 target_include_directories(wng_core
@@ -73,6 +74,7 @@ wng_add_test(test_execution_plan tests/test_execution_plan.cpp)
 wng_add_test(test_graph_command tests/test_graph_command.cpp)
 wng_add_test(test_schema_graph_command tests/test_schema_graph_command.cpp)
 wng_add_test(test_graph_restore tests/test_graph_restore.cpp)
+wng_add_test(test_graph_undo tests/test_graph_undo.cpp)
 set_tests_properties(test_public_header_policy PROPERTIES
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
@@ -115,6 +117,7 @@ wng_add_header_compile_test(test_header_dirty_propagation wng/dirty_propagation.
 wng_add_header_compile_test(test_header_execution_plan wng/execution_plan.hpp)
 wng_add_header_compile_test(test_header_graph_command wng/graph_command.hpp)
 wng_add_header_compile_test(test_header_graph_restore wng/graph_restore.hpp)
+wng_add_header_compile_test(test_header_graph_undo wng/graph_undo.hpp)
 wng_add_header_compile_test(test_header_validation wng/validation.hpp)
 wng_add_header_compile_test(test_header_graph wng/graph.hpp)
 wng_add_header_compile_test(test_header_wng wng/wng.hpp)
