@@ -5,6 +5,7 @@
 #include <wng/graph_command_transaction.hpp>
 #include <wng/graph_diff.hpp>
 #include <wng/graph_restore.hpp>
+#include <wng/graph_snapshot.hpp>
 #include <wng/graph_redo.hpp>
 #include <wng/graph_undo.hpp>
 #include <wng/dirty_propagation.hpp>

@@ -213,6 +213,24 @@ Current mutation preview status:
 - editor consequence UI: not implemented
 - selection cleanup integration: not implemented
 
+
+## Graph snapshot status
+
+WNG includes an in-memory graph snapshot abstraction built on DTO import/export.
+
+Current graph snapshot status:
+
+- capture graph snapshot: implemented
+- restore graph snapshot: implemented
+- stable-ID preservation during restore: implemented
+- atomic graph replacement during restore: implemented
+- graph diff compatibility: implemented
+- file I/O: not implemented
+- JSON serialization: not implemented
+- binary serialization: not implemented
+- editor state snapshots: not implemented
+- selection snapshots: not implemented
+
 ## Build
 
 ```sh
