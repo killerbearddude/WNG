@@ -24,6 +24,7 @@ add_library(wng_core
     src/graph_mutation_preview.cpp
     src/graph_snapshot.cpp
     src/schema_snapshot.cpp
+    src/schema_diff.cpp
 )
 
 target_include_directories(wng_core
@@ -89,6 +90,7 @@ wng_add_test(test_graph_diff tests/test_graph_diff.cpp)
 wng_add_test(test_graph_mutation_preview tests/test_graph_mutation_preview.cpp)
 wng_add_test(test_graph_snapshot tests/test_graph_snapshot.cpp)
 wng_add_test(test_schema_snapshot tests/test_schema_snapshot.cpp)
+wng_add_test(test_schema_diff tests/test_schema_diff.cpp)
 set_tests_properties(test_public_header_policy PROPERTIES
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
@@ -139,6 +141,7 @@ wng_add_header_compile_test(test_header_graph_diff wng/graph_diff.hpp)
 wng_add_header_compile_test(test_header_graph_mutation_preview wng/graph_mutation_preview.hpp)
 wng_add_header_compile_test(test_header_graph_snapshot wng/graph_snapshot.hpp)
 wng_add_header_compile_test(test_header_schema_snapshot wng/schema_snapshot.hpp)
+wng_add_header_compile_test(test_header_schema_diff wng/schema_diff.hpp)
 wng_add_header_compile_test(test_header_validation wng/validation.hpp)
 wng_add_header_compile_test(test_header_graph wng/graph.hpp)
 wng_add_header_compile_test(test_header_wng wng/wng.hpp)
