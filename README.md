@@ -162,6 +162,24 @@ Current undo/redo status:
 - transaction manager: not implemented
 - automatic command recording: not implemented
 
+
+## Command transaction status
+
+WNG includes a minimal command transaction builder for grouping command results
+before committing them to history.
+
+Current command transaction status:
+
+- command result records: implemented
+- command batch records: implemented
+- command history stacks: implemented
+- command transaction builder: implemented
+- commit transaction to history: implemented
+- rollback pending transaction through undo application: implemented
+- automatic command execution: not implemented
+- editor transaction manager: not implemented
+- selection/editor-state transaction data: not implemented
+
 ## Build
 
 ```sh

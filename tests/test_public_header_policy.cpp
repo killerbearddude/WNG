@@ -48,6 +48,7 @@ int main()
         "include/wng/graph.hpp",
         "include/wng/graph_command.hpp",
         "include/wng/graph_command_history.hpp",
+        "include/wng/graph_command_transaction.hpp",
         "include/wng/graph_restore.hpp",
         "include/wng/graph_redo.hpp",
         "include/wng/graph_undo.hpp",
