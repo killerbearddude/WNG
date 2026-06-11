@@ -144,7 +144,7 @@ Current restoration status:
 
 ## Undo/redo status
 
-WNG includes the first undo-application primitive for command records.
+WNG includes command-record undo and redo application primitives.
 
 Current undo/redo status:
 
@@ -153,6 +153,8 @@ Current undo/redo status:
 - graph object restoration: implemented
 - undo single command record: implemented
 - undo command batch: implemented
+- redo single command record: implemented
+- redo command batch: implemented
 - undo stack: not implemented
 - redo stack: not implemented
 - command history ownership: not implemented

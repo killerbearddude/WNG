@@ -2,6 +2,7 @@
 
 #include <wng/graph_command.hpp>
 #include <wng/graph_restore.hpp>
+#include <wng/graph_redo.hpp>
 #include <wng/graph_undo.hpp>
 #include <wng/dirty_propagation.hpp>
 #include <wng/execution_plan.hpp>
