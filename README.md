@@ -252,6 +252,23 @@ Current schema snapshot status:
 - JSON serialization: not implemented
 - editor schema drafts: not implemented
 
+## Schema diff status
+
+WNG includes deterministic schema diffing for schema diagnostics and tests.
+
+Current schema diff status:
+
+- node definition added/removed/modified diffing: implemented
+- port definition added/removed/modified diffing: implemented
+- stable node-type based matching: implemented
+- stable port-definition matching by node type, port kind, and port name: implemented
+- schema snapshot diffing: implemented
+- deterministic diff ordering: implemented
+- schema patch application: not implemented
+- schema migration: not implemented
+- schema merge/conflict resolution: not implemented
+- schema persistence: not implemented
+
 ## Build
 
 ```sh
