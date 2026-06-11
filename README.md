@@ -233,6 +233,25 @@ Current graph snapshot status:
 - editor state snapshots: not implemented
 - selection snapshots: not implemented
 
+
+## Schema snapshot status
+
+WNG includes an in-memory schema snapshot abstraction for diagnostics and tests.
+
+Current schema snapshot status:
+
+- capture schema snapshot: implemented
+- restore schema snapshot: implemented
+- node definition preservation: implemented
+- port definition preservation: implemented
+- atomic schema replacement during restore: implemented
+- schema-aware behavior after restore: implemented
+- schema diffing: not implemented
+- schema migration: not implemented
+- file I/O: not implemented
+- JSON serialization: not implemented
+- editor schema drafts: not implemented
+
 ## Build
 
 ```sh
