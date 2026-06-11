@@ -20,6 +20,7 @@ add_library(wng_core
     src/graph_redo.cpp
     src/graph_command_history.cpp
     src/graph_command_transaction.cpp
+    src/graph_diff.cpp
 )
 
 target_include_directories(wng_core
@@ -81,6 +82,7 @@ wng_add_test(test_graph_undo tests/test_graph_undo.cpp)
 wng_add_test(test_graph_redo tests/test_graph_redo.cpp)
 wng_add_test(test_graph_command_history tests/test_graph_command_history.cpp)
 wng_add_test(test_graph_command_transaction tests/test_graph_command_transaction.cpp)
+wng_add_test(test_graph_diff tests/test_graph_diff.cpp)
 set_tests_properties(test_public_header_policy PROPERTIES
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
@@ -127,6 +129,7 @@ wng_add_header_compile_test(test_header_graph_undo wng/graph_undo.hpp)
 wng_add_header_compile_test(test_header_graph_redo wng/graph_redo.hpp)
 wng_add_header_compile_test(test_header_graph_command_history wng/graph_command_history.hpp)
 wng_add_header_compile_test(test_header_graph_command_transaction wng/graph_command_transaction.hpp)
+wng_add_header_compile_test(test_header_graph_diff wng/graph_diff.hpp)
 wng_add_header_compile_test(test_header_validation wng/validation.hpp)
 wng_add_header_compile_test(test_header_graph wng/graph.hpp)
 wng_add_header_compile_test(test_header_wng wng/wng.hpp)

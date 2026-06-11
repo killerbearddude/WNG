@@ -180,6 +180,23 @@ Current command transaction status:
 - editor transaction manager: not implemented
 - selection/editor-state transaction data: not implemented
 
+
+## Graph diff status
+
+WNG includes deterministic graph diffing for graph-core diagnostics and regression tests.
+
+Current graph diff status:
+
+- node added/removed/modified diffing: implemented
+- port added/removed/modified diffing: implemented
+- link added/removed/modified diffing: implemented
+- stable-ID based object matching: implemented
+- deterministic diff ordering: implemented
+- schema diffing: not implemented
+- patch application: not implemented
+- merge/conflict resolution: not implemented
+- editor visual diffing: not implemented
+
 ## Build
 
 ```sh
