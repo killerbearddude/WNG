@@ -1,6 +1,6 @@
-// Provides command-style wrappers around core graph mutations.
-// The command layer captures mutation results and inverse data needed by a
-// future undo/redo stack, but it does not own command history.
+// Provides command-style wrappers and batch records for graph mutations.
+// The command layer captures mutation results and value metadata needed by a
+// future undo/redo stack, but it does not own command history, rollback, or replay.
 
 #pragma once
 
@@ -58,6 +58,60 @@ namespace wng
 
         bool success() const;
     };
+
+    // Groups command records that belong to one logical operation.
+    // The batch is metadata only: it does not execute commands, roll back Graph,
+    // replay mutations, or own undo/redo history.
+    struct GraphCommandBatch {
+        Result result = Result::Ok;
+        std::vector<GraphCommandRecord> records;
+
+        bool success() const;
+        bool empty() const;
+    };
+
+    // Appends a command result to a batch and updates the aggregate result.
+    // The first non-Ok command result is preserved so callers can quickly test
+    // whether the whole logical operation completed successfully.
+    void append_command_result(
+        GraphCommandBatch& batch,
+        const GraphCommandResult& result);
+
+    // Returns the first failed command record in the batch.
+    // The returned pointer is non-owning and remains valid only until the batch's
+    // records vector is mutated.
+    const GraphCommandRecord* first_failed_command(
+        const GraphCommandBatch& batch);
+
+    // Collects created node ids recorded across the batch.
+    // Order follows batch record order and each record's snapshot order; duplicate
+    // and zero ids are omitted. Graph state is not inspected.
+    std::vector<NodeId> created_nodes(const GraphCommandBatch& batch);
+
+    // Collects created port ids recorded across the batch.
+    // Order follows batch record order and each record's snapshot order; duplicate
+    // and zero ids are omitted. Graph state is not inspected.
+    std::vector<PortId> created_ports(const GraphCommandBatch& batch);
+
+    // Collects created link ids recorded across the batch.
+    // Order follows batch record order and each record's snapshot order; duplicate
+    // and zero ids are omitted. Graph state is not inspected.
+    std::vector<LinkId> created_links(const GraphCommandBatch& batch);
+
+    // Collects removed node ids recorded across the batch.
+    // Order follows batch record order and each record's snapshot order; duplicate
+    // and zero ids are omitted. Graph state is not inspected.
+    std::vector<NodeId> removed_nodes(const GraphCommandBatch& batch);
+
+    // Collects removed port ids recorded across the batch.
+    // Order follows batch record order and each record's snapshot order; duplicate
+    // and zero ids are omitted. Graph state is not inspected.
+    std::vector<PortId> removed_ports(const GraphCommandBatch& batch);
+
+    // Collects removed link ids recorded across the batch.
+    // Order follows batch record order and each record's snapshot order; duplicate
+    // and zero ids are omitted. Graph state is not inspected.
+    std::vector<LinkId> removed_links(const GraphCommandBatch& batch);
 
     // Executes Graph::create_node and records the created node id plus the
     // original descriptor needed to reason about future undo/redo behavior.

@@ -1,6 +1,6 @@
-// Implements command-style graph mutation helpers for WNG.
-// These helpers are not a command history manager: they execute one public Graph
-// mutation and return a value record that a future undo/redo layer can store.
+// Implements command-style graph mutation helpers and batch metadata for WNG.
+// These helpers execute individual public Graph mutations or group their records;
+// they do not own command history, rollback, replay, or undo/redo stacks.
 
 #include <vector>
 
@@ -13,6 +13,60 @@ namespace
     {
         command.result = result;
         command.record.result = result;
+    }
+
+    bool contains_node_id(const std::vector<wng::NodeId>& ids, wng::NodeId id)
+    {
+        for (wng::NodeId existing : ids) {
+            if (existing == id) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool contains_port_id(const std::vector<wng::PortId>& ids, wng::PortId id)
+    {
+        for (wng::PortId existing : ids) {
+            if (existing == id) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool contains_link_id(const std::vector<wng::LinkId>& ids, wng::LinkId id)
+    {
+        for (wng::LinkId existing : ids) {
+            if (existing == id) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void append_node_id(std::vector<wng::NodeId>& ids, wng::NodeId id)
+    {
+        if (id != wng::NodeId {} && !contains_node_id(ids, id)) {
+            ids.push_back(id);
+        }
+    }
+
+    void append_port_id(std::vector<wng::PortId>& ids, wng::PortId id)
+    {
+        if (id != wng::PortId {} && !contains_port_id(ids, id)) {
+            ids.push_back(id);
+        }
+    }
+
+    void append_link_id(std::vector<wng::LinkId>& ids, wng::LinkId id)
+    {
+        if (id != wng::LinkId {} && !contains_link_id(ids, id)) {
+            ids.push_back(id);
+        }
     }
 
     void snapshot_created_node(
@@ -153,6 +207,123 @@ namespace wng
     bool GraphCommandResult::success() const
     {
         return result == Result::Ok;
+    }
+
+    bool GraphCommandBatch::success() const
+    {
+        return result == Result::Ok;
+    }
+
+    bool GraphCommandBatch::empty() const
+    {
+        return records.empty();
+    }
+
+    void append_command_result(
+        GraphCommandBatch& batch,
+        const GraphCommandResult& result)
+    {
+        batch.records.push_back(result.record);
+
+        // Preserve the first failure as the aggregate batch result. Later records
+        // remain useful metadata, but they should not hide the original failure.
+        if (batch.result == Result::Ok) {
+            batch.result = result.result;
+        }
+    }
+
+    const GraphCommandRecord* first_failed_command(
+        const GraphCommandBatch& batch)
+    {
+        for (const GraphCommandRecord& record : batch.records) {
+            if (record.result != Result::Ok) {
+                return &record;
+            }
+        }
+
+        return nullptr;
+    }
+
+    std::vector<NodeId> created_nodes(const GraphCommandBatch& batch)
+    {
+        std::vector<NodeId> ids;
+
+        // Batch collectors intentionally read only command-record snapshots. They
+        // are safe to call after Graph has changed and they do not mutate Graph.
+        for (const GraphCommandRecord& record : batch.records) {
+            for (const Node& node : record.created_nodes) {
+                append_node_id(ids, node.id);
+            }
+        }
+
+        return ids;
+    }
+
+    std::vector<PortId> created_ports(const GraphCommandBatch& batch)
+    {
+        std::vector<PortId> ids;
+
+        // Snapshot order is the deterministic source of truth for batch metadata;
+        // no live Graph lookup is needed or permitted here.
+        for (const GraphCommandRecord& record : batch.records) {
+            for (const Port& port : record.created_ports) {
+                append_port_id(ids, port.id);
+            }
+        }
+
+        return ids;
+    }
+
+    std::vector<LinkId> created_links(const GraphCommandBatch& batch)
+    {
+        std::vector<LinkId> ids;
+
+        for (const GraphCommandRecord& record : batch.records) {
+            for (const Link& link : record.created_links) {
+                append_link_id(ids, link.id);
+            }
+        }
+
+        return ids;
+    }
+
+    std::vector<NodeId> removed_nodes(const GraphCommandBatch& batch)
+    {
+        std::vector<NodeId> ids;
+
+        for (const GraphCommandRecord& record : batch.records) {
+            for (const Node& node : record.removed_nodes) {
+                append_node_id(ids, node.id);
+            }
+        }
+
+        return ids;
+    }
+
+    std::vector<PortId> removed_ports(const GraphCommandBatch& batch)
+    {
+        std::vector<PortId> ids;
+
+        for (const GraphCommandRecord& record : batch.records) {
+            for (const Port& port : record.removed_ports) {
+                append_port_id(ids, port.id);
+            }
+        }
+
+        return ids;
+    }
+
+    std::vector<LinkId> removed_links(const GraphCommandBatch& batch)
+    {
+        std::vector<LinkId> ids;
+
+        for (const GraphCommandRecord& record : batch.records) {
+            for (const Link& link : record.removed_links) {
+                append_link_id(ids, link.id);
+            }
+        }
+
+        return ids;
     }
 
     GraphCommandResult command_create_node(

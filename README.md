@@ -121,9 +121,11 @@ Current command status:
 - graph-only create/destroy command helpers: implemented
 - schema-aware command helpers: implemented
 - schema-defined instantiate-node command helper: implemented
+- command batch records: implemented
 - undo stack: not implemented
 - redo stack: not implemented
-- transaction batching: not implemented
+- transaction execution: not implemented
+- automatic rollback: not implemented
 
 ## Build
 
