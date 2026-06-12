@@ -9,6 +9,7 @@
 #include <wng/graph.hpp>
 #include <wng/schema_migration_plan.hpp>
 #include <wng/schema_mutation.hpp>
+#include <wng/schema_migration_policy.hpp>
 
 namespace
 {
@@ -147,6 +148,18 @@ namespace
         }
 
         return nullptr;
+    }
+
+    wng::PortDefinitionIdentity port_identity(
+        const std::string& node_type,
+        wng::PortKind kind,
+        const std::string& name)
+    {
+        wng::PortDefinitionIdentity identity;
+        identity.node_type = node_type;
+        identity.kind = kind;
+        identity.name = name;
+        return identity;
     }
 }
 
@@ -450,6 +463,279 @@ int main()
 
         assert(plan.compatibility.schema_diff.changed());
         assert(!plan.compatibility.target_validation.valid());
+    }
+
+    {
+        // Empty policy is a no-op for compatible schemas. The policy-aware
+        // overload must preserve the no-policy planner's compatible baseline.
+        const wng::GraphSchema schema = make_schema(make_node_definition());
+        wng::Graph graph;
+        instantiate_schema_node(graph, schema);
+        const wng::SchemaMigrationPolicy policy;
+
+        const wng::SchemaMigrationPlan plan =
+            wng::build_schema_migration_plan(graph, schema, schema, policy);
+
+        assert(plan.result == wng::Result::Ok);
+        assert(plan.compatible());
+        assert(!plan.blocked());
+        assert(plan.actions.empty());
+    }
+
+    {
+        // Invalid policy aborts policy-aware planning before any partial plan is
+        // produced. Future migration application must not consume ambiguous policy.
+        const wng::GraphSchema schema = make_schema(make_node_definition());
+        const wng::Graph graph;
+        wng::SchemaMigrationPolicy policy;
+        policy.node_type_renames.push_back({ "math.add", "math.add" });
+
+        const wng::SchemaMigrationPlan plan =
+            wng::build_schema_migration_plan(graph, schema, schema, policy);
+
+        assert(plan.result == wng::Result::InvalidArgument);
+        assert(plan.actions.empty());
+    }
+
+    {
+        // Node removal acknowledgement covers the remove-node action, but the
+        // action remains blocking because no migration has actually been applied.
+        const wng::GraphSchema source = make_schema(make_node_definition());
+        const wng::GraphSchema target;
+        wng::Graph graph;
+        instantiate_schema_node(graph, source);
+        wng::SchemaMigrationPolicy policy;
+        policy.acknowledged_node_removals.push_back({ "math.add" });
+
+        const wng::SchemaMigrationPlan plan =
+            wng::build_schema_migration_plan(graph, source, target, policy);
+        const wng::SchemaMigrationAction* action = find_action(
+            plan,
+            wng::SchemaMigrationActionKind::RemoveNodeType,
+            "math.add");
+
+        assert(action != nullptr);
+        assert(action->policy_covered);
+        assert(action->blocking);
+        assert(plan.blocked());
+    }
+
+    {
+        // Node type rename policy covers a removed source node type without
+        // rewriting graph node types. Coverage is diagnostic metadata only.
+        const wng::GraphSchema source = make_schema(make_node_definition("old.math.add"));
+        const wng::GraphSchema target = make_schema(make_node_definition("math.add"));
+        wng::Graph graph;
+        const wng::NodeId node = instantiate_schema_node(graph, source, "old.math.add");
+        wng::SchemaMigrationPolicy policy;
+        policy.node_type_renames.push_back({ "old.math.add", "math.add" });
+
+        const wng::SchemaMigrationPlan plan =
+            wng::build_schema_migration_plan(graph, source, target, policy);
+        const wng::SchemaMigrationAction* action = find_action(
+            plan,
+            wng::SchemaMigrationActionKind::RemoveNodeType,
+            "old.math.add");
+
+        assert(action != nullptr);
+        const wng::Node* original = graph.find_node(node);
+        assert(original != nullptr);
+        assert(action->policy_covered);
+        assert(action->blocking);
+        assert(original->type == "old.math.add");
+    }
+
+    {
+        // Port removal acknowledgement covers the matching remove-port action.
+        // The graph port still exists and the action remains blocking.
+        const wng::GraphSchema source = make_schema(make_node_definition());
+        wng::NodeDefinition target_definition = make_node_definition();
+        target_definition.inputs.clear();
+        const wng::GraphSchema target = make_schema(target_definition);
+        wng::Graph graph;
+        const wng::NodeId node = instantiate_schema_node(graph, source);
+        const wng::Port* value = find_port(graph, node, wng::PortKind::Input, "value");
+        assert(value != nullptr);
+        wng::SchemaMigrationPolicy policy;
+        policy.acknowledged_port_removals.push_back(
+            { port_identity("math.add", wng::PortKind::Input, "value") });
+
+        const wng::SchemaMigrationPlan plan =
+            wng::build_schema_migration_plan(graph, source, target, policy);
+        const wng::SchemaMigrationAction* action = find_action(
+            plan,
+            wng::SchemaMigrationActionKind::RemovePortDefinition,
+            "math.add",
+            "value");
+
+        assert(action != nullptr);
+        assert(action->policy_covered);
+        assert(action->blocking);
+        assert(contains_port_id(action->affected_ports, value->id));
+        assert(find_port(graph, node, wng::PortKind::Input, "value") != nullptr);
+    }
+
+    {
+        // Port rename policy covers the removed old identity. This does not
+        // create the target port or mutate existing graph ports.
+        const wng::GraphSchema source = make_schema(make_node_definition());
+        wng::NodeDefinition target_definition = make_node_definition();
+        target_definition.inputs[0].name = "a";
+        const wng::GraphSchema target = make_schema(target_definition);
+        wng::Graph graph;
+        const wng::NodeId node = instantiate_schema_node(graph, source);
+        wng::SchemaMigrationPolicy policy;
+        wng::PortDefinitionRenamePolicy rename;
+        rename.from = port_identity("math.add", wng::PortKind::Input, "value");
+        rename.to = port_identity("math.add", wng::PortKind::Input, "a");
+        policy.port_renames.push_back(rename);
+
+        const wng::SchemaMigrationPlan plan =
+            wng::build_schema_migration_plan(graph, source, target, policy);
+        const wng::SchemaMigrationAction* action = find_action(
+            plan,
+            wng::SchemaMigrationActionKind::RemovePortDefinition,
+            "math.add",
+            "value");
+
+        assert(action != nullptr);
+        assert(action->policy_covered);
+        assert(action->blocking);
+        assert(find_port(graph, node, wng::PortKind::Input, "a") == nullptr);
+    }
+
+    {
+        // Port type change policy covers a modified port definition by stable
+        // port identity. The current action model does not store before/after
+        // types, so coverage is intentionally identity-based in this patch.
+        const wng::GraphSchema source = make_schema(make_node_definition());
+        wng::NodeDefinition target_definition = make_node_definition();
+        target_definition.inputs[0].type = "scalar";
+        const wng::GraphSchema target = make_schema(target_definition);
+        wng::Graph graph;
+        instantiate_schema_node(graph, source);
+        wng::SchemaMigrationPolicy policy;
+        wng::PortTypeChangePolicy type_change;
+        type_change.port = port_identity("math.add", wng::PortKind::Input, "value");
+        type_change.from_type = "number";
+        type_change.to_type = "scalar";
+        policy.port_type_changes.push_back(type_change);
+
+        const wng::SchemaMigrationPlan plan =
+            wng::build_schema_migration_plan(graph, source, target, policy);
+        const wng::SchemaMigrationAction* action = find_action(
+            plan,
+            wng::SchemaMigrationActionKind::ModifyPortDefinition,
+            "math.add",
+            "value");
+
+        assert(action != nullptr);
+        assert(action->policy_covered);
+        assert(action->blocking);
+    }
+
+    {
+        // Required-port default policy covers the added required-port action, but
+        // blocking remains true until a future migration application creates it.
+        const wng::GraphSchema source = make_schema(make_node_definition());
+        wng::NodeDefinition target_definition = make_node_definition();
+        target_definition.inputs.push_back(input("extra", "number", true));
+        const wng::GraphSchema target = make_schema(target_definition);
+        wng::Graph graph;
+        instantiate_schema_node(graph, source);
+        wng::SchemaMigrationPolicy policy;
+        policy.required_port_defaults.push_back(
+            { port_identity("math.add", wng::PortKind::Input, "extra"), "0" });
+
+        const wng::SchemaMigrationPlan plan =
+            wng::build_schema_migration_plan(graph, source, target, policy);
+        const wng::SchemaMigrationAction* action = find_action(
+            plan,
+            wng::SchemaMigrationActionKind::AddRequiredPort,
+            "math.add",
+            "extra");
+
+        assert(action != nullptr);
+        assert(action->policy_covered);
+        assert(action->blocking);
+        assert(plan.blocked());
+    }
+
+    {
+        // Unrelated policy data must not accidentally cover migration actions for
+        // different schema identities.
+        const wng::GraphSchema source = make_schema(make_node_definition());
+        const wng::GraphSchema target;
+        wng::Graph graph;
+        instantiate_schema_node(graph, source);
+        wng::SchemaMigrationPolicy policy;
+        policy.acknowledged_node_removals.push_back({ "unrelated.type" });
+
+        const wng::SchemaMigrationPlan plan =
+            wng::build_schema_migration_plan(graph, source, target, policy);
+        const wng::SchemaMigrationAction* action = find_action(
+            plan,
+            wng::SchemaMigrationActionKind::RemoveNodeType,
+            "math.add");
+
+        assert(action != nullptr);
+        assert(!action->policy_covered);
+    }
+
+    {
+        // Empty policy must match the existing planner's behavior, except that
+        // the policy-aware result exposes explicit false coverage flags.
+        const wng::GraphSchema source = make_schema(make_node_definition());
+        const wng::GraphSchema target;
+        wng::Graph graph;
+        instantiate_schema_node(graph, source);
+        const wng::SchemaMigrationPolicy policy;
+
+        const wng::SchemaMigrationPlan base_plan =
+            wng::build_schema_migration_plan(graph, source, target);
+        const wng::SchemaMigrationPlan policy_plan =
+            wng::build_schema_migration_plan(graph, source, target, policy);
+
+        assert(policy_plan.result == base_plan.result);
+        assert(policy_plan.compatibility.status == base_plan.compatibility.status);
+        assert(policy_plan.actions.size() == base_plan.actions.size());
+        for (std::size_t index = 0; index < policy_plan.actions.size(); ++index) {
+            assert(policy_plan.actions[index].kind == base_plan.actions[index].kind);
+            assert(policy_plan.actions[index].node_type == base_plan.actions[index].node_type);
+            assert(policy_plan.actions[index].port_name == base_plan.actions[index].port_name);
+            assert(policy_plan.actions[index].blocking == base_plan.actions[index].blocking);
+            assert(!policy_plan.actions[index].policy_covered);
+        }
+    }
+
+    {
+        // Policy-aware planning is still read-only. It must not mutate graph,
+        // schema, or policy objects while applying coverage metadata to the plan.
+        const wng::GraphSchema source = make_schema(make_node_definition());
+        wng::NodeDefinition target_definition = make_node_definition();
+        target_definition.inputs.push_back(input("extra", "number", true));
+        const wng::GraphSchema target = make_schema(target_definition);
+        wng::Graph graph;
+        instantiate_schema_node(graph, source);
+        const std::size_t node_count = graph.nodes().size();
+        const std::size_t port_count = graph.ports().size();
+        const std::size_t source_definition_count = source.node_definitions().size();
+        const std::size_t target_definition_count = target.node_definitions().size();
+        wng::SchemaMigrationPolicy policy;
+        policy.required_port_defaults.push_back(
+            { port_identity("math.add", wng::PortKind::Input, "extra"), "0" });
+        const std::size_t default_count = policy.required_port_defaults.size();
+
+        const wng::SchemaMigrationPlan plan =
+            wng::build_schema_migration_plan(graph, source, target, policy);
+
+        assert(plan.result == wng::Result::Ok);
+        assert(graph.nodes().size() == node_count);
+        assert(graph.ports().size() == port_count);
+        assert(source.node_definitions().size() == source_definition_count);
+        assert(target.node_definitions().size() == target_definition_count);
+        assert(policy.required_port_defaults.size() == default_count);
+        assert(policy.required_port_defaults[0].default_value == "0");
     }
 
     return 0;

@@ -11,6 +11,7 @@
 #include <wng/result.hpp>
 #include <wng/schema_compatibility.hpp>
 #include <wng/schema_diff.hpp>
+#include <wng/schema_migration_policy.hpp>
 
 namespace wng
 {
@@ -31,6 +32,8 @@ namespace wng
 
     // One deterministic migration-planning action. Affected graph IDs are
     // reported in graph storage order so editor diagnostics and tests are stable.
+    // Policy coverage is diagnostic only; it marks explicit user/tool intent but
+    // does not clear blocking state or apply a migration.
     struct SchemaMigrationAction {
         SchemaMigrationActionKind kind = SchemaMigrationActionKind::None;
 
@@ -42,6 +45,7 @@ namespace wng
         std::vector<PortId> affected_ports;
 
         bool blocking = false;
+        bool policy_covered = false;
     };
 
     // Read-only migration plan for moving graph data between schemas. The
@@ -66,4 +70,14 @@ namespace wng
         const Graph& graph,
         const GraphSchema& source_schema,
         const GraphSchema& target_schema);
+
+    // Builds a deterministic read-only migration plan and marks actions covered
+    // by explicit migration policy entries. Policy coverage does not apply
+    // migrations, repair graph objects, or clear blocking state; it only
+    // distinguishes known/accepted actions from unresolved actions.
+    SchemaMigrationPlan build_schema_migration_plan(
+        const Graph& graph,
+        const GraphSchema& source_schema,
+        const GraphSchema& target_schema,
+        const SchemaMigrationPolicy& policy);
 }
