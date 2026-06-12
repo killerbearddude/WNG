@@ -24,6 +24,7 @@
 #include <wng/schema.hpp>
 #include <wng/schema_snapshot.hpp>
 #include <wng/schema_diff.hpp>
+#include <wng/schema_compatibility.hpp>
 #include <wng/schema_mutation.hpp>
 #include <wng/schema_validation.hpp>
 #include <wng/serialization_dto.hpp>
