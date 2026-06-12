@@ -342,6 +342,24 @@ Current schema migration apply preview status:
 - command generation: not implemented
 - editor migration UI: not implemented
 
+## Schema migration command preview status
+
+WNG includes a read-only preview of prospective schema migration operations.
+
+Current schema migration command preview status:
+
+- node type rename preview steps: implemented
+- port definition rename preview steps: implemented
+- port type change preview steps: implemented
+- required port creation preview steps: implemented
+- node removal preview steps: implemented
+- port removal preview steps: implemented
+- deterministic affected-ID reporting: implemented
+- migration application: not implemented
+- graph command generation: not implemented
+- automatic graph repair: not implemented
+- editor migration UI: not implemented
+
 ## Build
 
 ```sh
