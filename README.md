@@ -286,6 +286,25 @@ Current schema compatibility status:
 - schema patch application: not implemented
 - editor migration UI: not implemented
 
+
+## Schema migration planning status
+
+WNG includes read-only schema migration planning for graph/schema diagnostics.
+
+Current schema migration planning status:
+
+- schema compatibility report consumption: implemented
+- removed node type action planning: implemented
+- modified node type action planning: implemented
+- removed port definition action planning: implemented
+- modified port definition action planning: implemented
+- added required port action planning: implemented
+- deterministic affected-ID reporting: implemented
+- migration application: not implemented
+- automatic graph repair: not implemented
+- custom migration policies: not implemented
+- editor migration UI: not implemented
+
 ## Build
 
 ```sh
