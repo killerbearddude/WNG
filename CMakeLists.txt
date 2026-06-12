@@ -97,6 +97,7 @@ wng_add_test(test_schema_diff tests/test_schema_diff.cpp)
 wng_add_test(test_schema_compatibility tests/test_schema_compatibility.cpp)
 wng_add_test(test_schema_migration_plan tests/test_schema_migration_plan.cpp)
 wng_add_test(test_schema_migration_policy tests/test_schema_migration_policy.cpp)
+wng_add_test(test_schema_migration_policy_schema tests/test_schema_migration_policy_schema.cpp)
 set_tests_properties(test_public_header_policy PROPERTIES
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
