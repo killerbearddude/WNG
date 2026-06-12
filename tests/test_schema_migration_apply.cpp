@@ -1,6 +1,6 @@
-// Exercises atomic, non-destructive schema migration application.
+// Exercises atomic schema migration application.
 // Tests verify DTO working-copy mutation, target validation, diff reporting,
-// destructive-step rejection, and the no-mutation guarantee on failure.
+// destructive cleanup, and the no-mutation guarantee on failure.
 
 #include <cassert>
 #include <string>
@@ -327,34 +327,38 @@ int main()
     }
 
     {
-        // Destructive node removal is intentionally rejected. This patch only
-        // applies non-destructive metadata and required-port additions.
+        // Policy-covered destructive node removal now applies atomically. The
+        // migrated graph contains no removed nodes or owned ports.
         const wng::GraphSchema source = make_schema(node_definition("obsolete", false));
         const wng::GraphSchema target;
         wng::Graph graph;
-        instantiate_node(graph, source, "obsolete");
-        const wng::Graph before = graph;
+        const wng::NodeId obsolete = instantiate_node(graph, source, "obsolete");
         wng::SchemaMigrationPolicy policy;
         policy.acknowledged_node_removals.push_back({ "obsolete" });
 
         const wng::SchemaMigrationApplyResult result =
             wng::apply_schema_migration(graph, source, target, policy);
 
-        assert(result.result == wng::Result::InvalidArgument);
-        assert(result.status == wng::SchemaMigrationApplyStatus::UnsupportedDestructiveOperation);
-        assert_graph_unchanged(before, graph);
+        assert(result.result == wng::Result::Ok);
+        assert(result.status == wng::SchemaMigrationApplyStatus::Applied);
+        assert(result.applied_steps.size() == 1U);
+        assert(result.applied_steps[0].preview_step.destructive);
+        assert(graph.find_node(obsolete) == nullptr);
+        assert(graph.nodes().empty());
+        assert(graph.ports().empty());
+        assert(result.diff.changed());
+        assert(wng::validate_graph(graph, target).valid());
     }
 
     {
-        // Destructive port removal is also rejected. Future destructive apply
-        // needs explicit consequence and command-history policy first.
+        // Policy-covered destructive port removal erases the port from graph
+        // storage and from the owning node's input/output vectors.
         const wng::GraphSchema source = make_schema(node_definition("math.add"));
         wng::NodeDefinition target_definition = node_definition("math.add");
         target_definition.inputs.clear();
         const wng::GraphSchema target = make_schema(target_definition);
         wng::Graph graph;
-        instantiate_node(graph, source, "math.add");
-        const wng::Graph before = graph;
+        const wng::NodeId node = instantiate_node(graph, source, "math.add");
         wng::SchemaMigrationPolicy policy;
         policy.acknowledged_port_removals.push_back({
             port_identity("math.add", wng::PortKind::Input, "value") });
@@ -362,8 +366,11 @@ int main()
         const wng::SchemaMigrationApplyResult result =
             wng::apply_schema_migration(graph, source, target, policy);
 
-        assert(result.status == wng::SchemaMigrationApplyStatus::UnsupportedDestructiveOperation);
-        assert_graph_unchanged(before, graph);
+        assert(result.status == wng::SchemaMigrationApplyStatus::Applied);
+        assert(find_port(graph, node, wng::PortKind::Input, "value") == nullptr);
+        assert(graph.find_node(node)->inputs.empty());
+        assert(result.diff.changed());
+        assert(wng::validate_graph(graph, target).valid());
     }
 
     {

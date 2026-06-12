@@ -362,7 +362,7 @@ Current schema migration command preview status:
 
 ## Schema migration apply status
 
-WNG includes atomic application for non-destructive, policy-covered schema migrations.
+WNG includes atomic application for policy-covered schema migrations.
 
 Current schema migration apply status:
 
@@ -370,11 +370,12 @@ Current schema migration apply status:
 - port definition rename application: implemented
 - port type metadata change application: implemented
 - required port creation from policy defaults: implemented
+- destructive node removal application: implemented
+- destructive port removal application: implemented
+- dependent link cleanup during destructive apply: implemented
 - atomic graph replacement on success: implemented
 - before/after graph diff reporting: implemented
 - target schema validation after apply: implemented
-- destructive node removal application: not implemented
-- destructive port removal application: not implemented
 - graph command generation: not implemented
 - undo/redo history integration: not implemented
 - editor migration UI: not implemented

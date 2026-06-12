@@ -104,6 +104,7 @@ wng_add_test(test_schema_migration_policy_schema tests/test_schema_migration_pol
 wng_add_test(test_schema_migration_apply_preview tests/test_schema_migration_apply_preview.cpp)
 wng_add_test(test_schema_migration_command_preview tests/test_schema_migration_command_preview.cpp)
 wng_add_test(test_schema_migration_apply tests/test_schema_migration_apply.cpp)
+wng_add_test(test_schema_migration_apply_destructive tests/test_schema_migration_apply_destructive.cpp)
 set_tests_properties(test_public_header_policy PROPERTIES
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )

@@ -1,4 +1,4 @@
-// Applies non-destructive, policy-covered schema migrations to graphs.
+// Applies policy-covered schema migrations to graphs.
 // The implementation uses an in-memory DTO working copy and replaces the graph
 // only after the migrated result validates against the target schema.
 
@@ -15,8 +15,8 @@ namespace wng
     class Graph;
     class GraphSchema;
 
-    // High-level outcome for schema migration application. Destructive actions
-    // remain unsupported until a future patch defines explicit removal semantics.
+    // High-level outcome for schema migration application. UnsupportedDestructiveOperation
+    // is reserved for destructive preview steps not handled by current apply semantics.
     enum class SchemaMigrationApplyStatus {
         Applied,
         PreviewFailed,
@@ -48,9 +48,9 @@ namespace wng
         bool applied() const;
     };
 
-    // Applies non-destructive migration operations described by policy and target
-    // schema. The source graph is unchanged on failure. Destructive migration
-    // operations are rejected until a dedicated destructive-apply policy exists.
+    // Applies policy-covered migration operations described by policy and target
+    // schema. The source graph is unchanged on failure. Destructive removals are
+    // supported only when represented by explicit policy-covered preview steps.
     SchemaMigrationApplyResult apply_schema_migration(
         Graph& graph,
         const GraphSchema& source_schema,
