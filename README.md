@@ -320,7 +320,7 @@ Current schema migration policy status:
 - port definition removal acknowledgement: implemented
 - structural policy validation: implemented
 - policy-aware migration planning: implemented
-- schema-aware policy validation: not implemented
+- schema-aware policy validation: implemented
 - migration application: not implemented
 - automatic graph repair: not implemented
 - policy persistence: not implemented

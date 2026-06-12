@@ -93,9 +93,64 @@ namespace wng
         bool success() const;
     };
 
+    // Describes schema-reference problems found when a structurally valid policy
+    // is checked against a concrete source/target schema pair.
+    enum class SchemaMigrationPolicySchemaIssueKind {
+        StructuralPolicyInvalid,
+
+        SourceNodeTypeMissing,
+        TargetNodeTypeMissing,
+        NodeTypeRenameNotNeeded,
+        NodeTypeRemovalNotReflectedInTarget,
+
+        SourcePortDefinitionMissing,
+        TargetPortDefinitionMissing,
+        PortDefinitionRenameNotNeeded,
+        PortDefinitionRemovalNotReflectedInTarget,
+
+        PortTypeChangeSourceMismatch,
+        PortTypeChangeTargetMismatch,
+        PortTypeChangeNotNeeded,
+
+        RequiredPortDefaultTargetMissing,
+        RequiredPortDefaultNotRequired
+    };
+
+    // One schema-aware policy validation issue. The node/port identity fields are
+    // populated when the issue can be tied to a specific schema object.
+    struct SchemaMigrationPolicySchemaIssue {
+        SchemaMigrationPolicySchemaIssueKind kind =
+            SchemaMigrationPolicySchemaIssueKind::StructuralPolicyInvalid;
+
+        Result result = Result::InvalidArgument;
+
+        std::string node_type;
+        PortKind port_kind = PortKind::Input;
+        std::string port_name;
+    };
+
+    // Schema-aware validation result for migration policies. `result` mirrors the
+    // first collected issue result, while `issues` preserves deterministic order
+    // for diagnostics and tests.
+    struct SchemaMigrationPolicySchemaValidation {
+        Result result = Result::Ok;
+        std::vector<SchemaMigrationPolicySchemaIssue> issues;
+
+        bool success() const;
+        bool valid() const;
+    };
+
     // Validates policy structure for duplicate entries, empty identities, and
     // self-renames. This does not check whether a policy matches a specific
     // source/target schema pair.
     SchemaMigrationPolicyValidation validate_schema_migration_policy(
         const SchemaMigrationPolicy& policy);
+
+    // Validates policy structure and checks whether policy entries reference a
+    // concrete source/target schema pair consistently. This is read-only and does
+    // not apply migrations, repair graphs, or mutate schemas.
+    SchemaMigrationPolicySchemaValidation validate_schema_migration_policy(
+        const SchemaMigrationPolicy& policy,
+        const GraphSchema& source_schema,
+        const GraphSchema& target_schema);
 }
