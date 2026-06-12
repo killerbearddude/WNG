@@ -325,6 +325,23 @@ Current schema migration policy status:
 - automatic graph repair: not implemented
 - policy persistence: not implemented
 
+## Schema migration apply preview status
+
+WNG includes a read-only preview layer for schema migration application readiness.
+
+Current schema migration apply preview status:
+
+- schema-aware policy validation integration: implemented
+- policy-aware migration planning integration: implemented
+- uncovered blocking action reporting: implemented
+- covered blocking action reporting: implemented
+- non-blocking action reporting: implemented
+- readiness classification: implemented
+- migration application: not implemented
+- automatic graph repair: not implemented
+- command generation: not implemented
+- editor migration UI: not implemented
+
 ## Build
 
 ```sh
