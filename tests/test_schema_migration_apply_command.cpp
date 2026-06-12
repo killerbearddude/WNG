@@ -204,9 +204,11 @@ int main()
     {
         // Port rename command records preserve metadata rewrites in snapshots
         // without requiring GraphCommandRecord to grow a port-name mutation kind.
+        // The renamed target port is optional so this test isolates rename command
+        // capture from the separate required-port-default migration path.
         const wng::GraphSchema source = make_schema({ node_definition("math.add") });
         wng::NodeDefinition target_definition = node_definition("math.add");
-        target_definition.inputs[0].name = "a";
+        target_definition.inputs[0] = input("a", "number", false);
         const wng::GraphSchema target = make_schema({ target_definition });
         wng::Graph graph;
         const wng::NodeId node = instantiate_node(graph, source, "math.add");
