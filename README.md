@@ -269,6 +269,23 @@ Current schema diff status:
 - schema merge/conflict resolution: not implemented
 - schema persistence: not implemented
 
+## Schema compatibility status
+
+WNG includes read-only schema compatibility analysis for graph/schema diagnostics.
+
+Current schema compatibility status:
+
+- source-schema validation analysis: implemented
+- target-schema validation analysis: implemented
+- schema diff integration: implemented
+- affected node reporting: implemented
+- affected port reporting: implemented
+- deterministic affected-ID ordering: implemented
+- schema migration: not implemented
+- automatic graph repair: not implemented
+- schema patch application: not implemented
+- editor migration UI: not implemented
+
 ## Build
 
 ```sh
