@@ -447,8 +447,13 @@ namespace
         case wng::SchemaMigrationActionKind::ModifyNodeType:
             return covered_by_node_rename(action, policy);
         case wng::SchemaMigrationActionKind::RemovePortDefinition:
+            // Destructive node-type removal necessarily removes that node type's
+            // port definitions. Treat those port removals as covered by the node
+            // removal acknowledgement so apply preview can proceed to one node
+            // removal step rather than requiring redundant per-port policy.
             return covered_by_port_removal_ack(action, policy) ||
-                covered_by_port_rename(action, policy);
+                covered_by_port_rename(action, policy) ||
+                covered_by_node_removal_ack(action, policy);
         case wng::SchemaMigrationActionKind::ModifyPortDefinition:
             // SchemaMigrationAction stores stable port identity but not before/after
             // port types, so this patch covers type-change policies by identity
