@@ -360,6 +360,25 @@ Current schema migration command preview status:
 - automatic graph repair: not implemented
 - editor migration UI: not implemented
 
+## Schema migration apply status
+
+WNG includes atomic application for non-destructive, policy-covered schema migrations.
+
+Current schema migration apply status:
+
+- node type rename application: implemented
+- port definition rename application: implemented
+- port type metadata change application: implemented
+- required port creation from policy defaults: implemented
+- atomic graph replacement on success: implemented
+- before/after graph diff reporting: implemented
+- target schema validation after apply: implemented
+- destructive node removal application: not implemented
+- destructive port removal application: not implemented
+- graph command generation: not implemented
+- undo/redo history integration: not implemented
+- editor migration UI: not implemented
+
 ## Build
 
 ```sh

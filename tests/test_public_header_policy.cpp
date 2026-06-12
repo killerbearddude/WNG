@@ -49,6 +49,7 @@ int main()
         "include/wng/schema_migration_policy.hpp",
         "include/wng/schema_migration_apply_preview.hpp",
         "include/wng/schema_migration_command_preview.hpp",
+        "include/wng/schema_migration_apply.hpp",
         "include/wng/schema_mutation.hpp",
         "include/wng/schema_validation.hpp",
         "include/wng/validation.hpp",
