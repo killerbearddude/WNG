@@ -342,6 +342,140 @@ namespace
         action.blocking = true;
         actions.push_back(action);
     }
+
+    bool same_port_identity(
+        const wng::SchemaMigrationAction& action,
+        const wng::PortDefinitionIdentity& identity)
+    {
+        return action.node_type == identity.node_type &&
+            action.port_kind == identity.kind &&
+            action.port_name == identity.name;
+    }
+
+    bool covered_by_node_rename(
+        const wng::SchemaMigrationAction& action,
+        const wng::SchemaMigrationPolicy& policy)
+    {
+        for (const wng::NodeTypeRenamePolicy& rename : policy.node_type_renames) {
+            if (rename.from == action.node_type || rename.to == action.node_type) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool covered_by_node_removal_ack(
+        const wng::SchemaMigrationAction& action,
+        const wng::SchemaMigrationPolicy& policy)
+    {
+        for (const wng::NodeTypeRemovalPolicy& removal : policy.acknowledged_node_removals) {
+            if (removal.type == action.node_type) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool covered_by_port_rename(
+        const wng::SchemaMigrationAction& action,
+        const wng::SchemaMigrationPolicy& policy)
+    {
+        for (const wng::PortDefinitionRenamePolicy& rename : policy.port_renames) {
+            if (same_port_identity(action, rename.from) ||
+                same_port_identity(action, rename.to)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool covered_by_port_type_change(
+        const wng::SchemaMigrationAction& action,
+        const wng::SchemaMigrationPolicy& policy)
+    {
+        for (const wng::PortTypeChangePolicy& type_change : policy.port_type_changes) {
+            if (same_port_identity(action, type_change.port)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool covered_by_required_port_default(
+        const wng::SchemaMigrationAction& action,
+        const wng::SchemaMigrationPolicy& policy)
+    {
+        for (const wng::RequiredPortDefaultPolicy& default_policy :
+            policy.required_port_defaults) {
+            if (same_port_identity(action, default_policy.port)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool covered_by_port_removal_ack(
+        const wng::SchemaMigrationAction& action,
+        const wng::SchemaMigrationPolicy& policy)
+    {
+        for (const wng::PortDefinitionRemovalPolicy& removal :
+            policy.acknowledged_port_removals) {
+            if (same_port_identity(action, removal.port)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool action_is_policy_covered(
+        const wng::SchemaMigrationAction& action,
+        const wng::SchemaMigrationPolicy& policy)
+    {
+        // Coverage is diagnostic only. It records that explicit policy data
+        // matches the action, but it does not mutate graph state or prove that a
+        // migration has been applied.
+        switch (action.kind) {
+        case wng::SchemaMigrationActionKind::RemoveNodeType:
+            return covered_by_node_removal_ack(action, policy) ||
+                covered_by_node_rename(action, policy);
+        case wng::SchemaMigrationActionKind::ModifyNodeType:
+            return covered_by_node_rename(action, policy);
+        case wng::SchemaMigrationActionKind::RemovePortDefinition:
+            return covered_by_port_removal_ack(action, policy) ||
+                covered_by_port_rename(action, policy);
+        case wng::SchemaMigrationActionKind::ModifyPortDefinition:
+            // SchemaMigrationAction stores stable port identity but not before/after
+            // port types, so this patch covers type-change policies by identity
+            // only. Type-alignment diagnostics belong to a richer future report.
+            return covered_by_port_type_change(action, policy) ||
+                covered_by_port_rename(action, policy);
+        case wng::SchemaMigrationActionKind::AddRequiredPort:
+            return covered_by_required_port_default(action, policy);
+        case wng::SchemaMigrationActionKind::None:
+        case wng::SchemaMigrationActionKind::TargetValidationIssue:
+            return false;
+        }
+
+        return false;
+    }
+
+    void apply_policy_coverage(
+        wng::SchemaMigrationPlan& plan,
+        const wng::SchemaMigrationPolicy& policy)
+    {
+        // Policy coverage intentionally leaves blocking unchanged. Future
+        // migration application may consume covered actions, but this planning
+        // layer remains read-only and conservative.
+        for (wng::SchemaMigrationAction& action : plan.actions) {
+            action.policy_covered = action_is_policy_covered(action, policy);
+        }
+    }
 }
 
 namespace wng
@@ -405,6 +539,34 @@ namespace wng
             append_target_validation_fallback(plan.compatibility, plan.actions);
 
             plan.result = Result::Ok;
+            return plan;
+        } catch (const std::bad_alloc&) {
+            return migration_plan_failure(Result::AllocationFailure);
+        }
+    }
+
+    SchemaMigrationPlan build_schema_migration_plan(
+        const Graph& graph,
+        const GraphSchema& source_schema,
+        const GraphSchema& target_schema,
+        const SchemaMigrationPolicy& policy)
+    {
+        try {
+            const SchemaMigrationPolicyValidation policy_validation =
+                validate_schema_migration_policy(policy);
+            if (!policy_validation.success()) {
+                return migration_plan_failure(policy_validation.result);
+            }
+
+            SchemaMigrationPlan plan = build_schema_migration_plan(
+                graph,
+                source_schema,
+                target_schema);
+            if (!plan.success()) {
+                return plan;
+            }
+
+            apply_policy_coverage(plan, policy);
             return plan;
         } catch (const std::bad_alloc&) {
             return migration_plan_failure(Result::AllocationFailure);

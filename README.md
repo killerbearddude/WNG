@@ -300,9 +300,10 @@ Current schema migration planning status:
 - modified port definition action planning: implemented
 - added required port action planning: implemented
 - deterministic affected-ID reporting: implemented
+- migration policy coverage reporting: implemented
 - migration application: not implemented
 - automatic graph repair: not implemented
-- custom migration policies: not implemented
+- custom migration execution: not implemented
 - editor migration UI: not implemented
 
 ## Schema migration policy status
@@ -318,6 +319,7 @@ Current schema migration policy status:
 - node type removal acknowledgement: implemented
 - port definition removal acknowledgement: implemented
 - structural policy validation: implemented
+- policy-aware migration planning: implemented
 - schema-aware policy validation: not implemented
 - migration application: not implemented
 - automatic graph repair: not implemented
