@@ -305,6 +305,24 @@ Current schema migration planning status:
 - custom migration policies: not implemented
 - editor migration UI: not implemented
 
+## Schema migration policy status
+
+WNG includes a value-oriented schema migration policy model for future migration workflows.
+
+Current schema migration policy status:
+
+- node type rename policy: implemented
+- port definition rename policy: implemented
+- port type change policy: implemented
+- required port default policy: implemented
+- node type removal acknowledgement: implemented
+- port definition removal acknowledgement: implemented
+- structural policy validation: implemented
+- schema-aware policy validation: not implemented
+- migration application: not implemented
+- automatic graph repair: not implemented
+- policy persistence: not implemented
+
 ## Build
 
 ```sh
