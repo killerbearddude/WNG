@@ -231,14 +231,20 @@ int main()
     }
 
     {
-        // Policy coverage is not migration application. A removal acknowledgement
-        // covers the action, but target validation still blocks readiness.
+        // Policy coverage is not migration application. Removing a node type also
+        // removes its schema-owned port definitions, so this test acknowledges all
+        // generated blocking actions while still requiring validation to block
+        // readiness until a future apply layer mutates the graph.
         const wng::GraphSchema source = make_schema(make_node_definition());
         const wng::GraphSchema target;
         wng::Graph graph;
         instantiate_schema_node(graph, source);
         wng::SchemaMigrationPolicy policy;
         policy.acknowledged_node_removals.push_back({ "math.add" });
+        policy.acknowledged_port_removals.push_back(
+            { port_identity("math.add", wng::PortKind::Input, "value") });
+        policy.acknowledged_port_removals.push_back(
+            { port_identity("math.add", wng::PortKind::Output, "result") });
 
         const wng::SchemaMigrationApplyPreview preview =
             wng::preview_schema_migration_application(graph, source, target, policy);
