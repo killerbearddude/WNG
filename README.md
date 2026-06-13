@@ -380,6 +380,22 @@ Current schema migration apply status:
 - undo/redo history integration: not implemented
 - editor migration UI: not implemented
 
+## Schema migration apply command status
+
+WNG includes a graph-level command wrapper for completed schema migrations.
+
+Current schema migration apply command status:
+
+- before graph snapshot capture: implemented
+- after graph snapshot capture: implemented
+- migration apply result preservation: implemented
+- before/after graph diff preservation: implemented
+- manual snapshot restore for future undo/redo: implemented
+- GraphCommandHistory integration: not implemented
+- GraphCommandRecord integration: not implemented
+- automatic undo/redo integration: not implemented
+- editor migration history: not implemented
+
 ## Build
 
 ```sh
