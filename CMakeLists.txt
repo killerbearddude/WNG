@@ -32,6 +32,7 @@ add_library(wng_core
     src/schema_migration_command_preview.cpp
     src/schema_migration_apply.cpp
     src/schema_migration_apply_command.cpp
+    src/schema_migration_apply_command_history.cpp
 )
 
 target_include_directories(wng_core
@@ -107,6 +108,7 @@ wng_add_test(test_schema_migration_command_preview tests/test_schema_migration_c
 wng_add_test(test_schema_migration_apply tests/test_schema_migration_apply.cpp)
 wng_add_test(test_schema_migration_apply_destructive tests/test_schema_migration_apply_destructive.cpp)
 wng_add_test(test_schema_migration_apply_command tests/test_schema_migration_apply_command.cpp)
+wng_add_test(test_schema_migration_apply_command_history tests/test_schema_migration_apply_command_history.cpp)
 set_tests_properties(test_public_header_policy PROPERTIES
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
@@ -165,6 +167,7 @@ wng_add_header_compile_test(test_header_schema_migration_apply_preview wng/schem
 wng_add_header_compile_test(test_header_schema_migration_command_preview wng/schema_migration_command_preview.hpp)
 wng_add_header_compile_test(test_header_schema_migration_apply wng/schema_migration_apply.hpp)
 wng_add_header_compile_test(test_header_schema_migration_apply_command wng/schema_migration_apply_command.hpp)
+wng_add_header_compile_test(test_header_schema_migration_apply_command_history wng/schema_migration_apply_command_history.hpp)
 wng_add_header_compile_test(test_header_validation wng/validation.hpp)
 wng_add_header_compile_test(test_header_graph wng/graph.hpp)
 wng_add_header_compile_test(test_header_wng wng/wng.hpp)
