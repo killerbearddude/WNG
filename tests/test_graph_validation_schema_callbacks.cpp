@@ -5,6 +5,7 @@
 #include <cassert>
 #include <vector>
 
+#include <wng/graph.hpp>
 #include <wng/graph_validation.hpp>
 #include <wng/schema.hpp>
 
