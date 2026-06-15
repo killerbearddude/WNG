@@ -3,6 +3,7 @@
 // schema-aware mutations can build on this API without weakening core rules.
 
 #include <cassert>
+#include <new>
 #include <string>
 
 #include <wng/schema_validation.hpp>
@@ -174,6 +175,21 @@ namespace
             }
 
             return allow();
+        }
+    };
+
+    class AllocatingCallback final : public wng::SchemaValidationCallback {
+    public:
+        mutable unsigned calls = 0;
+
+        wng::ConnectionValidation validate_connection(
+            const wng::Graph&,
+            const wng::GraphSchema&,
+            wng::PortId,
+            wng::PortId) const override
+        {
+            ++calls;
+            throw std::bad_alloc();
         }
     };
 
@@ -459,6 +475,27 @@ int main()
         assert_validation(validation, wng::ConnectionStatus::Rejected, wng::Result::InvalidConnection);
         assert(static_cast<unsigned>(fixture.graph.nodes().size()) == node_count);
         assert(static_cast<unsigned>(fixture.graph.ports().size()) == port_count);
+    }
+
+    {
+        // Callback allocation failure is reported through ConnectionValidation so
+        // the Result-based public API does not leak std::bad_alloc to callers.
+        GraphFixture fixture = make_valid_graph();
+        wng::GraphSchema schema;
+        add_default_schema(schema);
+        AllocatingCallback callback;
+        wng::SchemaValidationOptions options;
+        options.callback = &callback;
+
+        const wng::ConnectionValidation validation = wng::validate_connection(
+            fixture.graph,
+            schema,
+            fixture.output,
+            fixture.input,
+            options);
+
+        assert(callback.calls == 1U);
+        assert_validation(validation, wng::ConnectionStatus::Rejected, wng::Result::AllocationFailure);
     }
 
     {
