@@ -43,12 +43,34 @@ namespace
         return nullptr;
     }
 
+    wng::ConnectionValidation allow()
+    {
+        wng::ConnectionValidation validation;
+        validation.status = wng::ConnectionStatus::Allowed;
+        validation.result = wng::Result::Ok;
+        return validation;
+    }
+
     wng::ConnectionValidation reject(wng::Result result)
     {
         wng::ConnectionValidation validation;
         validation.status = wng::ConnectionStatus::Rejected;
         validation.result = result;
         return validation;
+    }
+
+    wng::ConnectionValidation apply_callback(
+        const wng::Graph& graph,
+        const wng::GraphSchema& schema,
+        wng::PortId from,
+        wng::PortId to,
+        const wng::SchemaValidationOptions& options)
+    {
+        if (options.callback == nullptr) {
+            return allow();
+        }
+
+        return options.callback->validate_connection(graph, schema, from, to);
     }
 }
 
@@ -59,6 +81,21 @@ namespace wng
         const GraphSchema& schema,
         PortId from,
         PortId to)
+    {
+        return validate_connection(
+            graph,
+            schema,
+            from,
+            to,
+            SchemaValidationOptions {});
+    }
+
+    ConnectionValidation validate_connection(
+        const Graph& graph,
+        const GraphSchema& schema,
+        PortId from,
+        PortId to,
+        const SchemaValidationOptions& options)
     {
         // Built-in graph validation owns structural safety. Schema validation
         // intentionally runs only after that succeeds so schemas cannot permit
@@ -111,9 +148,6 @@ namespace wng
             return reject(Result::InvalidConnection);
         }
 
-        ConnectionValidation validation;
-        validation.status = ConnectionStatus::Allowed;
-        validation.result = Result::Ok;
-        return validation;
+        return apply_callback(graph, schema, from, to, options);
     }
 }
