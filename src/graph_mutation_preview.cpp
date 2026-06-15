@@ -1,4 +1,4 @@
-// Implements deterministic, non-mutating previews for destructive graph mutations.
+// Implements deterministic, non-mutating previews for graph removals.
 // Preview summaries are kept in parity with GraphMutationSummary so future editor
 // and command systems can trust that previewed cleanup matches actual cleanup.
 
@@ -66,6 +66,56 @@ namespace
         preview.result = result;
         return preview;
     }
+
+    wng::GraphMutationPreviewHostRequest destroy_node_request(wng::NodeId node)
+    {
+        wng::GraphMutationPreviewHostRequest request;
+        request.operation = wng::GraphMutationPreviewOperation::DestroyNode;
+        request.node = node;
+        return request;
+    }
+
+    wng::GraphMutationPreviewHostRequest remove_port_request(wng::PortId port)
+    {
+        wng::GraphMutationPreviewHostRequest request;
+        request.operation = wng::GraphMutationPreviewOperation::RemovePort;
+        request.port = port;
+        return request;
+    }
+
+    wng::GraphMutationPreviewHostRequest destroy_link_request(wng::LinkId link)
+    {
+        wng::GraphMutationPreviewHostRequest request;
+        request.operation = wng::GraphMutationPreviewOperation::DestroyLink;
+        request.link = link;
+        return request;
+    }
+
+    wng::GraphMutationPreview apply_host_preview(
+        const wng::Graph& graph,
+        const wng::GraphMutationPreviewHostRequest& request,
+        const wng::GraphMutationPreviewOptions& options,
+        wng::GraphMutationPreview preview)
+    {
+        if (options.callback == nullptr) {
+            return preview;
+        }
+
+        try {
+            const wng::Result result = options.callback->preview_mutation(
+                graph,
+                request,
+                preview,
+                preview.host_consequences);
+            if (result != wng::Result::Ok) {
+                return preview_failure(result);
+            }
+
+            return preview;
+        } catch (const std::bad_alloc&) {
+            return preview_failure(wng::Result::AllocationFailure);
+        }
+    }
 }
 
 namespace wng
@@ -79,12 +129,21 @@ namespace wng
     {
         return summary.removed_nodes.empty() &&
             summary.removed_ports.empty() &&
-            summary.removed_links.empty();
+            summary.removed_links.empty() &&
+            host_consequences.empty();
     }
 
     GraphMutationPreview preview_destroy_node(
         const Graph& graph,
         NodeId node)
+    {
+        return preview_destroy_node(graph, node, GraphMutationPreviewOptions {});
+    }
+
+    GraphMutationPreview preview_destroy_node(
+        const Graph& graph,
+        NodeId node,
+        const GraphMutationPreviewOptions& options)
     {
         try {
             if (node == NodeId {}) {
@@ -107,15 +166,15 @@ namespace wng
                 return preview_failure(port_result);
             }
 
-            // Link cleanup follows graph link storage order, matching destructive
-            // mutation summaries and avoiding hidden numeric-ID sorting policy.
+            // Link cleanup follows graph link storage order, matching removal
+            // summaries and avoiding hidden numeric-ID sorting policy.
             for (const Link& link : graph.links()) {
                 if (link_touches_any_port(link, preview.summary.removed_ports)) {
                     preview.summary.removed_links.push_back(link.id);
                 }
             }
 
-            return preview;
+            return apply_host_preview(graph, destroy_node_request(node), options, preview);
         } catch (const std::bad_alloc&) {
             return preview_failure(Result::AllocationFailure);
         }
@@ -124,6 +183,14 @@ namespace wng
     GraphMutationPreview preview_remove_port(
         const Graph& graph,
         PortId port)
+    {
+        return preview_remove_port(graph, port, GraphMutationPreviewOptions {});
+    }
+
+    GraphMutationPreview preview_remove_port(
+        const Graph& graph,
+        PortId port,
+        const GraphMutationPreviewOptions& options)
     {
         try {
             if (port == PortId {}) {
@@ -145,7 +212,7 @@ namespace wng
                 }
             }
 
-            return preview;
+            return apply_host_preview(graph, remove_port_request(port), options, preview);
         } catch (const std::bad_alloc&) {
             return preview_failure(Result::AllocationFailure);
         }
@@ -154,6 +221,14 @@ namespace wng
     GraphMutationPreview preview_destroy_link(
         const Graph& graph,
         LinkId link)
+    {
+        return preview_destroy_link(graph, link, GraphMutationPreviewOptions {});
+    }
+
+    GraphMutationPreview preview_destroy_link(
+        const Graph& graph,
+        LinkId link,
+        const GraphMutationPreviewOptions& options)
     {
         try {
             if (link == LinkId {}) {
@@ -166,7 +241,7 @@ namespace wng
 
             GraphMutationPreview preview;
             preview.summary.removed_links.push_back(link);
-            return preview;
+            return apply_host_preview(graph, destroy_link_request(link), options, preview);
         } catch (const std::bad_alloc&) {
             return preview_failure(Result::AllocationFailure);
         }
