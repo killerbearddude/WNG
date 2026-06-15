@@ -47,16 +47,13 @@ namespace wng
         DisabledPortDefinition,
         RequiredPortMissing,
         PortTypeMismatch,
-        CycleDetected
+        CycleDetected,
+        HostValidationIssue
     };
 
     enum class GraphCycleMode {
         AllowCycles,
         RequireAcyclic
-    };
-
-    struct GraphValidationOptions {
-        GraphCycleMode cycle_mode = GraphCycleMode::AllowCycles;
     };
 
     struct ValidationIssue {
@@ -78,12 +75,30 @@ namespace wng
         bool has_errors() const;
     };
 
+    // Optional host extension point for domain-specific graph validation.
+    // Implementations must treat Graph as read-only and append diagnostics only to
+    // the supplied report. The graph core does not own callback lifetime.
+    class GraphValidationCallback {
+    public:
+        virtual ~GraphValidationCallback() = default;
+
+        virtual Result validate_graph(
+            const Graph& graph,
+            ValidationReport& report) const = 0;
+    };
+
+    struct GraphValidationOptions {
+        GraphCycleMode cycle_mode = GraphCycleMode::AllowCycles;
+        const GraphValidationCallback* callback = nullptr;
+    };
+
     // Performs non-mutating structural validation using only current Graph state.
     // This overload does not require or consult a GraphSchema and allows cycles.
     ValidationReport validate_graph(const Graph& graph);
 
     // Performs structural validation with explicit graph-level validation options.
-    // Acyclic checking is opt-in so graph storage remains domain-neutral by default.
+    // Acyclic checking and host callbacks are opt-in so graph storage remains
+    // domain-neutral by default.
     ValidationReport validate_graph(
         const Graph& graph,
         const GraphValidationOptions& options);
@@ -93,7 +108,8 @@ namespace wng
     ValidationReport validate_graph(const Graph& graph, const GraphSchema& schema);
 
     // Performs structural validation with explicit graph-level validation options,
-    // then appends schema-consistency issues without hiding graph issues.
+    // then appends schema-consistency issues and host diagnostics without hiding
+    // earlier graph issues.
     ValidationReport validate_graph(
         const Graph& graph,
         const GraphSchema& schema,
