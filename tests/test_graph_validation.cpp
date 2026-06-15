@@ -3,6 +3,7 @@
 // avoid private backdoors and focus on reachable graph states.
 
 #include <cassert>
+#include <new>
 #include <string>
 
 #include <wng/graph_validation.hpp>
@@ -100,10 +101,11 @@ namespace
         return id;
     }
 
-    void connect(wng::Graph& graph, wng::PortId from, wng::PortId to)
+    wng::LinkId connect(wng::Graph& graph, wng::PortId from, wng::PortId to)
     {
         wng::LinkId link;
         assert(graph.create_link(from, to, &link) == wng::Result::Ok);
+        return link;
     }
 
     wng::GraphValidationOptions require_acyclic()
@@ -111,6 +113,30 @@ namespace
         wng::GraphValidationOptions options;
         options.cycle_mode = wng::GraphCycleMode::RequireAcyclic;
         return options;
+    }
+
+    struct SchemaLinkedGraph {
+        wng::Graph graph;
+        wng::GraphSchema schema;
+        wng::PortId from;
+        wng::PortId to;
+        wng::LinkId link;
+    };
+
+    SchemaLinkedGraph make_schema_linked_graph()
+    {
+        SchemaLinkedGraph fixture;
+        fixture.schema = schema_with(node_definition());
+
+        const wng::NodeId source = create_node(fixture.graph, "math.add");
+        const wng::NodeId target = create_node(fixture.graph, "math.add");
+        add_port(fixture.graph, source, wng::PortKind::Input, "a", "number");
+        fixture.from = add_port(fixture.graph, source, wng::PortKind::Output, "result", "number");
+        fixture.to = add_port(fixture.graph, target, wng::PortKind::Input, "a", "number");
+        add_port(fixture.graph, target, wng::PortKind::Output, "result", "number");
+        fixture.link = connect(fixture.graph, fixture.from, fixture.to);
+
+        return fixture;
     }
 
     class EmptyTitleCallback final : public wng::GraphValidationCallback {
@@ -150,6 +176,65 @@ namespace
             wng::ValidationReport&) const override
         {
             return wng::Result::InvalidArgument;
+        }
+    };
+
+    class CountingSchemaConnectionCallback final : public wng::SchemaValidationCallback {
+    public:
+        mutable unsigned calls = 0;
+        mutable wng::PortId last_from;
+        mutable wng::PortId last_to;
+
+        wng::ConnectionValidation validate_connection(
+            const wng::Graph& graph,
+            const wng::GraphSchema&,
+            wng::PortId from,
+            wng::PortId to) const override
+        {
+            ++calls;
+            last_from = from;
+            last_to = to;
+            assert(graph.find_port(from) != nullptr);
+            assert(graph.find_port(to) != nullptr);
+
+            wng::ConnectionValidation validation;
+            validation.status = wng::ConnectionStatus::Allowed;
+            validation.result = wng::Result::Ok;
+            return validation;
+        }
+    };
+
+    class RejectingSchemaConnectionCallback final : public wng::SchemaValidationCallback {
+    public:
+        mutable unsigned calls = 0;
+
+        wng::ConnectionValidation validate_connection(
+            const wng::Graph&,
+            const wng::GraphSchema&,
+            wng::PortId,
+            wng::PortId) const override
+        {
+            ++calls;
+
+            wng::ConnectionValidation validation;
+            validation.status = wng::ConnectionStatus::Rejected;
+            validation.result = wng::Result::InvalidConnection;
+            return validation;
+        }
+    };
+
+    class AllocatingSchemaConnectionCallback final : public wng::SchemaValidationCallback {
+    public:
+        mutable unsigned calls = 0;
+
+        wng::ConnectionValidation validate_connection(
+            const wng::Graph&,
+            const wng::GraphSchema&,
+            wng::PortId,
+            wng::PortId) const override
+        {
+            ++calls;
+            throw std::bad_alloc();
         }
     };
 
@@ -487,6 +572,105 @@ int main()
         assert(report.issues[0].node == node);
         assert(report.issues[1].code == wng::ValidationIssueCode::HostValidationIssue);
         assert(report.issues[1].node == node);
+    }
+
+    {
+        // Schema connection callbacks are applied to existing links only after
+        // structural and built-in schema validation have succeeded.
+        SchemaLinkedGraph fixture = make_schema_linked_graph();
+        CountingSchemaConnectionCallback callback;
+        wng::GraphSchemaValidationOptions options;
+        options.schema_options.callback = &callback;
+
+        const wng::ValidationReport report =
+            wng::validate_graph(fixture.graph, fixture.schema, options);
+
+        assert(callback.calls == 1U);
+        assert(callback.last_from == fixture.from);
+        assert(callback.last_to == fixture.to);
+        assert(report.valid());
+        assert(find_issue(report, wng::ValidationIssueCode::SchemaConnectionRejected) == nullptr);
+    }
+
+    {
+        // A rejecting schema connection callback becomes a deterministic link issue
+        // without mutating the graph or weakening built-in schema validation.
+        SchemaLinkedGraph fixture = make_schema_linked_graph();
+        RejectingSchemaConnectionCallback callback;
+        wng::GraphSchemaValidationOptions options;
+        options.schema_options.callback = &callback;
+
+        const wng::ValidationReport report =
+            wng::validate_graph(fixture.graph, fixture.schema, options);
+
+        assert(callback.calls == 1U);
+        assert(!report.valid());
+        assert(report.issues.size() == 1U);
+        assert(report.issues[0].code == wng::ValidationIssueCode::SchemaConnectionRejected);
+        assert(report.issues[0].link == fixture.link);
+        assert(report.issues[0].result == wng::Result::InvalidConnection);
+    }
+
+    {
+        // Schema connection callbacks are skipped when earlier schema validation
+        // already found errors, so host policy does not obscure core diagnostics.
+        wng::Graph graph;
+        const wng::NodeId source = create_node(graph, "unknown.source");
+        const wng::NodeId target = create_node(graph, "unknown.target");
+        const wng::PortId from = add_port(graph, source, wng::PortKind::Output, "value", "number");
+        const wng::PortId to = add_port(graph, target, wng::PortKind::Input, "value", "number");
+        connect(graph, from, to);
+
+        const wng::GraphSchema schema = schema_with(node_definition());
+        CountingSchemaConnectionCallback callback;
+        wng::GraphSchemaValidationOptions options;
+        options.schema_options.callback = &callback;
+
+        const wng::ValidationReport report = wng::validate_graph(graph, schema, options);
+
+        assert(callback.calls == 0U);
+        assert(!report.valid());
+        assert(count_issues(report, wng::ValidationIssueCode::MissingNodeDefinition) == 2U);
+        assert(find_issue(report, wng::ValidationIssueCode::SchemaConnectionRejected) == nullptr);
+    }
+
+    {
+        // Allocation failure from schema connection callbacks maps into the normal
+        // validation report instead of escaping the public API.
+        SchemaLinkedGraph fixture = make_schema_linked_graph();
+        AllocatingSchemaConnectionCallback callback;
+        wng::GraphSchemaValidationOptions options;
+        options.schema_options.callback = &callback;
+
+        const wng::ValidationReport report =
+            wng::validate_graph(fixture.graph, fixture.schema, options);
+
+        assert(callback.calls == 1U);
+        assert(!report.valid());
+        assert(report.issues.size() == 1U);
+        assert(report.issues[0].code == wng::ValidationIssueCode::SchemaConnectionRejected);
+        assert(report.issues[0].link == fixture.link);
+        assert(report.issues[0].result == wng::Result::AllocationFailure);
+    }
+
+    {
+        // Graph host callbacks still run after schema connection callback issues,
+        // preserving deterministic layering through schema-specific and graph-host checks.
+        SchemaLinkedGraph fixture = make_schema_linked_graph();
+        RejectingSchemaConnectionCallback schema_callback;
+        EmptyTitleCallback graph_callback;
+        wng::GraphSchemaValidationOptions options;
+        options.schema_options.callback = &schema_callback;
+        options.graph_options.callback = &graph_callback;
+
+        const wng::ValidationReport report =
+            wng::validate_graph(fixture.graph, fixture.schema, options);
+
+        assert(schema_callback.calls == 1U);
+        assert(graph_callback.calls == 1U);
+        assert(!report.valid());
+        assert(report.issues.size() == 1U);
+        assert(report.issues[0].code == wng::ValidationIssueCode::SchemaConnectionRejected);
     }
 
     {
