@@ -303,6 +303,17 @@ int main()
     }
 
     {
+        // Empty brace-init remains source-compatible with the graph-options
+        // overload, not the combined graph/schema-options overload.
+        SchemaLinkedGraph fixture = make_schema_linked_graph();
+        const wng::ValidationReport report =
+            wng::validate_graph(fixture.graph, fixture.schema, {});
+
+        assert(report.valid());
+        assert(find_issue(report, wng::ValidationIssueCode::SchemaConnectionRejected) == nullptr);
+    }
+
+    {
         // A graph can be structurally valid while still failing schema validation
         // because its node type is unknown to the schema.
         wng::Graph graph;
@@ -579,8 +590,9 @@ int main()
         // structural and built-in schema validation have succeeded.
         SchemaLinkedGraph fixture = make_schema_linked_graph();
         CountingSchemaConnectionCallback callback;
-        wng::GraphSchemaValidationOptions options;
-        options.schema_options.callback = &callback;
+        wng::SchemaValidationOptions schema_options;
+        schema_options.callback = &callback;
+        const wng::GraphSchemaValidationOptions options(schema_options);
 
         const wng::ValidationReport report =
             wng::validate_graph(fixture.graph, fixture.schema, options);
@@ -597,8 +609,9 @@ int main()
         // without mutating the graph or weakening built-in schema validation.
         SchemaLinkedGraph fixture = make_schema_linked_graph();
         RejectingSchemaConnectionCallback callback;
-        wng::GraphSchemaValidationOptions options;
-        options.schema_options.callback = &callback;
+        wng::SchemaValidationOptions schema_options;
+        schema_options.callback = &callback;
+        const wng::GraphSchemaValidationOptions options(schema_options);
 
         const wng::ValidationReport report =
             wng::validate_graph(fixture.graph, fixture.schema, options);
@@ -623,8 +636,9 @@ int main()
 
         const wng::GraphSchema schema = schema_with(node_definition());
         CountingSchemaConnectionCallback callback;
-        wng::GraphSchemaValidationOptions options;
-        options.schema_options.callback = &callback;
+        wng::SchemaValidationOptions schema_options;
+        schema_options.callback = &callback;
+        const wng::GraphSchemaValidationOptions options(schema_options);
 
         const wng::ValidationReport report = wng::validate_graph(graph, schema, options);
 
@@ -639,8 +653,9 @@ int main()
         // validation report instead of escaping the public API.
         SchemaLinkedGraph fixture = make_schema_linked_graph();
         AllocatingSchemaConnectionCallback callback;
-        wng::GraphSchemaValidationOptions options;
-        options.schema_options.callback = &callback;
+        wng::SchemaValidationOptions schema_options;
+        schema_options.callback = &callback;
+        const wng::GraphSchemaValidationOptions options(schema_options);
 
         const wng::ValidationReport report =
             wng::validate_graph(fixture.graph, fixture.schema, options);
@@ -659,9 +674,11 @@ int main()
         SchemaLinkedGraph fixture = make_schema_linked_graph();
         RejectingSchemaConnectionCallback schema_callback;
         EmptyTitleCallback graph_callback;
-        wng::GraphSchemaValidationOptions options;
-        options.schema_options.callback = &schema_callback;
-        options.graph_options.callback = &graph_callback;
+        wng::SchemaValidationOptions schema_options;
+        schema_options.callback = &schema_callback;
+        wng::GraphValidationOptions graph_options;
+        graph_options.callback = &graph_callback;
+        const wng::GraphSchemaValidationOptions options(graph_options, schema_options);
 
         const wng::ValidationReport report =
             wng::validate_graph(fixture.graph, fixture.schema, options);
