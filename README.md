@@ -214,7 +214,7 @@ Current mutation preview status:
 - preview destroy link consequences: implemented
 - preview summary ordering matches mutation summary ordering: implemented
 - preview does not mutate graph state: implemented
-- host consequence-preview callbacks: not implemented
+- host consequence-preview callbacks: implemented
 - editor consequence UI: not implemented
 - selection cleanup integration: not implemented
 
