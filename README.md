@@ -144,8 +144,8 @@ Current restoration status:
 
 ## Undo/redo status
 
-WNG includes command-record undo/redo application primitives and a minimal
-graph command history owner.
+WNG includes command-record undo/redo application primitives, a minimal graph
+command history owner, and a mixed graph-level history owner.
 
 Current undo/redo status:
 
@@ -157,6 +157,8 @@ Current undo/redo status:
 - redo single command record: implemented
 - redo command batch: implemented
 - graph command history stacks: implemented
+- mixed graph-level history stacks: implemented
+- mixed graph command/schema migration undo ordering: implemented
 - editor state undo: not implemented
 - selection undo: not implemented
 - transaction manager: not implemented
@@ -409,9 +411,25 @@ Current schema migration apply command history status:
 - failed command record rejection: implemented
 - GraphCommandHistory integration: not implemented
 - GraphCommandRecord integration: not implemented
-- mixed graph-command/migration-command history: not implemented
+- mixed graph-command/migration-command history: implemented through GraphHistory
 - editor migration history: not implemented
 - selection/editor-state history: not implemented
+
+## Graph-level history status
+
+WNG includes a mixed graph-level history stack for user-level graph operations.
+
+Current graph-level history status:
+
+- normal graph command batch entries: implemented
+- schema migration apply command entries: implemented
+- mixed chronological undo/redo ordering: implemented
+- redo invalidation after new mixed entry: implemented
+- specialized GraphCommandHistory remains available: implemented
+- specialized SchemaMigrationApplyCommandHistory remains available: implemented
+- editor state history: not implemented
+- selection state history: not implemented
+- WPL/editor integration: not implemented
 
 ## Build
 
