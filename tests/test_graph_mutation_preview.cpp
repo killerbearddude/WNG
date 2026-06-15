@@ -3,6 +3,7 @@
 // future editor consequence panels can trust previews before applying changes.
 
 #include <cassert>
+#include <new>
 #include <vector>
 
 #include <wng/graph.hpp>
@@ -177,7 +178,77 @@ namespace
         assert(preview.summary.removed_nodes.empty());
         assert(preview.summary.removed_ports.empty());
         assert(preview.summary.removed_links.empty());
+        assert(preview.host_consequences.empty());
     }
+
+    class RecordingPreviewCallback final : public wng::GraphMutationPreviewCallback {
+    public:
+        mutable unsigned calls = 0;
+        mutable wng::GraphMutationPreviewOperation last_operation =
+            wng::GraphMutationPreviewOperation::DestroyNode;
+        mutable wng::NodeId last_node;
+        mutable wng::PortId last_port;
+        mutable wng::LinkId last_link;
+        mutable unsigned core_removed_nodes = 0;
+        mutable unsigned core_removed_ports = 0;
+        mutable unsigned core_removed_links = 0;
+
+        wng::Result preview_mutation(
+            const wng::Graph&,
+            const wng::GraphMutationPreviewHostRequest& request,
+            const wng::GraphMutationPreview& core_preview,
+            std::vector<wng::GraphMutationPreviewHostConsequence>& out_consequences) const override
+        {
+            ++calls;
+            last_operation = request.operation;
+            last_node = request.node;
+            last_port = request.port;
+            last_link = request.link;
+            core_removed_nodes = static_cast<unsigned>(core_preview.summary.removed_nodes.size());
+            core_removed_ports = static_cast<unsigned>(core_preview.summary.removed_ports.size());
+            core_removed_links = static_cast<unsigned>(core_preview.summary.removed_links.size());
+
+            wng::GraphMutationPreviewHostConsequence consequence;
+            consequence.result = wng::Result::Ok;
+            consequence.operation = request.operation;
+            consequence.node = request.node;
+            consequence.port = request.port;
+            consequence.link = request.link;
+            consequence.message = "host consequence";
+            out_consequences.push_back(consequence);
+            return wng::Result::Ok;
+        }
+    };
+
+    class FailingPreviewCallback final : public wng::GraphMutationPreviewCallback {
+    public:
+        mutable unsigned calls = 0;
+
+        wng::Result preview_mutation(
+            const wng::Graph&,
+            const wng::GraphMutationPreviewHostRequest&,
+            const wng::GraphMutationPreview&,
+            std::vector<wng::GraphMutationPreviewHostConsequence>&) const override
+        {
+            ++calls;
+            return wng::Result::InvalidArgument;
+        }
+    };
+
+    class AllocatingPreviewCallback final : public wng::GraphMutationPreviewCallback {
+    public:
+        mutable unsigned calls = 0;
+
+        wng::Result preview_mutation(
+            const wng::Graph&,
+            const wng::GraphMutationPreviewHostRequest&,
+            const wng::GraphMutationPreview&,
+            std::vector<wng::GraphMutationPreviewHostConsequence>&) const override
+        {
+            ++calls;
+            throw std::bad_alloc();
+        }
+    };
 }
 
 int main()
@@ -230,6 +301,7 @@ int main()
             chain.a_to_b,
             chain.b_to_c
         });
+        assert(preview.host_consequences.empty());
         assert_state_unchanged(chain.graph, before);
     }
 
@@ -298,6 +370,7 @@ int main()
         assert(preview.summary.removed_nodes.empty());
         assert_ids(preview.summary.removed_ports, std::vector<wng::PortId> { b.input });
         assert_ids(preview.summary.removed_links, std::vector<wng::LinkId> { link });
+        assert(preview.host_consequences.empty());
         assert_state_unchanged(graph, before);
     }
 
@@ -363,6 +436,7 @@ int main()
         assert(preview.summary.removed_nodes.empty());
         assert(preview.summary.removed_ports.empty());
         assert_ids(preview.summary.removed_links, std::vector<wng::LinkId> { link });
+        assert(preview.host_consequences.empty());
         assert_state_unchanged(graph, before);
     }
 
@@ -449,6 +523,151 @@ int main()
         assert(graph.find_node(b.node) != nullptr);
         assert(graph.find_port(b.input) != nullptr);
         assert(graph.find_link(link) != nullptr);
+    }
+
+    {
+        // The options overload without a callback preserves the default preview
+        // summary and leaves the host sidecar empty.
+        Chain chain = make_chain();
+        const wng::GraphMutationPreviewOptions options;
+
+        const wng::GraphMutationPreview preview =
+            wng::preview_destroy_node(chain.graph, chain.b.node, options);
+        const wng::GraphMutationPreview baseline =
+            wng::preview_destroy_node(chain.graph, chain.b.node);
+
+        assert(preview.result == wng::Result::Ok);
+        assert_summary_equals(preview.summary, baseline.summary);
+        assert(preview.host_consequences.empty());
+    }
+
+    {
+        // Host sidecar data is appended after the core preview succeeds, without
+        // changing the removal summary used for actual graph commands.
+        Chain chain = make_chain();
+        const GraphState before = capture_state(chain.graph);
+        RecordingPreviewCallback callback;
+        wng::GraphMutationPreviewOptions options;
+        options.callback = &callback;
+
+        const wng::GraphMutationPreview preview =
+            wng::preview_destroy_node(chain.graph, chain.b.node, options);
+
+        wng::Graph actual_graph = copy_graph(chain.graph);
+        wng::GraphMutationSummary actual_summary;
+        assert(actual_graph.destroy_node(chain.b.node, &actual_summary) == wng::Result::Ok);
+
+        assert(preview.result == wng::Result::Ok);
+        assert(callback.calls == 1U);
+        assert(callback.last_operation == wng::GraphMutationPreviewOperation::DestroyNode);
+        assert(callback.last_node == chain.b.node);
+        assert(callback.core_removed_nodes == 1U);
+        assert(callback.core_removed_ports == 2U);
+        assert(callback.core_removed_links == 2U);
+        assert_summary_equals(preview.summary, actual_summary);
+        assert(preview.host_consequences.size() == 1U);
+        assert(preview.host_consequences[0].operation == wng::GraphMutationPreviewOperation::DestroyNode);
+        assert(preview.host_consequences[0].node == chain.b.node);
+        assert(preview.host_consequences[0].message == "host consequence");
+        assert_state_unchanged(chain.graph, before);
+    }
+
+    {
+        // Remove-port callbacks receive the requested port and the already-built
+        // core summary before appending sidecar data.
+        wng::Graph graph;
+        const NodePorts a = create_node_with_ports(graph, "A");
+        const NodePorts b = create_node_with_ports(graph, "B");
+        const wng::LinkId link = create_link(graph, a.output, b.input);
+        RecordingPreviewCallback callback;
+        wng::GraphMutationPreviewOptions options;
+        options.callback = &callback;
+
+        const wng::GraphMutationPreview preview =
+            wng::preview_remove_port(graph, b.input, options);
+
+        assert(preview.result == wng::Result::Ok);
+        assert(callback.calls == 1U);
+        assert(callback.last_operation == wng::GraphMutationPreviewOperation::RemovePort);
+        assert(callback.last_port == b.input);
+        assert(callback.core_removed_nodes == 0U);
+        assert(callback.core_removed_ports == 1U);
+        assert(callback.core_removed_links == 1U);
+        assert_ids(preview.summary.removed_links, std::vector<wng::LinkId> { link });
+        assert(preview.host_consequences.size() == 1U);
+    }
+
+    {
+        // Destroy-link callbacks receive the requested link and do not affect the
+        // core single-link removal summary.
+        wng::Graph graph;
+        const NodePorts a = create_node_with_ports(graph, "A");
+        const NodePorts b = create_node_with_ports(graph, "B");
+        const wng::LinkId link = create_link(graph, a.output, b.input);
+        RecordingPreviewCallback callback;
+        wng::GraphMutationPreviewOptions options;
+        options.callback = &callback;
+
+        const wng::GraphMutationPreview preview =
+            wng::preview_destroy_link(graph, link, options);
+
+        assert(preview.result == wng::Result::Ok);
+        assert(callback.calls == 1U);
+        assert(callback.last_operation == wng::GraphMutationPreviewOperation::DestroyLink);
+        assert(callback.last_link == link);
+        assert(callback.core_removed_nodes == 0U);
+        assert(callback.core_removed_ports == 0U);
+        assert(callback.core_removed_links == 1U);
+        assert_ids(preview.summary.removed_links, std::vector<wng::LinkId> { link });
+        assert(preview.host_consequences.size() == 1U);
+    }
+
+    {
+        // Core preview failure is final. Host callbacks are not invoked when the
+        // requested object does not exist.
+        wng::Graph graph;
+        RecordingPreviewCallback callback;
+        wng::GraphMutationPreviewOptions options;
+        options.callback = &callback;
+
+        const wng::GraphMutationPreview preview =
+            wng::preview_destroy_node(graph, wng::NodeId { 999 }, options);
+
+        assert(preview.result == wng::Result::NotFound);
+        assert(callback.calls == 0U);
+        assert_preview_empty(preview);
+    }
+
+    {
+        // A host callback failure reports the callback result through the preview
+        // Result and discards partial sidecar data.
+        Chain chain = make_chain();
+        FailingPreviewCallback callback;
+        wng::GraphMutationPreviewOptions options;
+        options.callback = &callback;
+
+        const wng::GraphMutationPreview preview =
+            wng::preview_destroy_node(chain.graph, chain.b.node, options);
+
+        assert(callback.calls == 1U);
+        assert(preview.result == wng::Result::InvalidArgument);
+        assert_preview_empty(preview);
+    }
+
+    {
+        // Callback allocation failure is reported through the Result-based preview
+        // API instead of leaking std::bad_alloc to callers.
+        Chain chain = make_chain();
+        AllocatingPreviewCallback callback;
+        wng::GraphMutationPreviewOptions options;
+        options.callback = &callback;
+
+        const wng::GraphMutationPreview preview =
+            wng::preview_destroy_node(chain.graph, chain.b.node, options);
+
+        assert(callback.calls == 1U);
+        assert(preview.result == wng::Result::AllocationFailure);
+        assert_preview_empty(preview);
     }
 
     return 0;
