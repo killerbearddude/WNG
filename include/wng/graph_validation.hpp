@@ -46,7 +46,17 @@ namespace wng
         DisabledNodeDefinition,
         DisabledPortDefinition,
         RequiredPortMissing,
-        PortTypeMismatch
+        PortTypeMismatch,
+        CycleDetected
+    };
+
+    enum class GraphCycleMode {
+        AllowCycles,
+        RequireAcyclic
+    };
+
+    struct GraphValidationOptions {
+        GraphCycleMode cycle_mode = GraphCycleMode::AllowCycles;
     };
 
     struct ValidationIssue {
@@ -69,10 +79,23 @@ namespace wng
     };
 
     // Performs non-mutating structural validation using only current Graph state.
-    // This overload does not require or consult a GraphSchema.
+    // This overload does not require or consult a GraphSchema and allows cycles.
     ValidationReport validate_graph(const Graph& graph);
+
+    // Performs structural validation with explicit graph-level validation options.
+    // Acyclic checking is opt-in so graph storage remains domain-neutral by default.
+    ValidationReport validate_graph(
+        const Graph& graph,
+        const GraphValidationOptions& options);
 
     // Performs structural validation first, then appends schema-consistency issues.
     // Schema validation extends structural validation and never hides graph issues.
     ValidationReport validate_graph(const Graph& graph, const GraphSchema& schema);
+
+    // Performs structural validation with explicit graph-level validation options,
+    // then appends schema-consistency issues without hiding graph issues.
+    ValidationReport validate_graph(
+        const Graph& graph,
+        const GraphSchema& schema,
+        const GraphValidationOptions& options);
 }
