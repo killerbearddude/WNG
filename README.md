@@ -67,6 +67,7 @@ Current validation status:
 - whole-graph schema validation: implemented
 - acyclic graph validation option: implemented
 - host validation callbacks: implemented
+- schema connection callbacks in whole-graph schema validation: implemented
 
 ## Traversal status
 

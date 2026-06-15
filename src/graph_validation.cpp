@@ -12,6 +12,7 @@
 #include <wng/graph.hpp>
 #include <wng/graph_traversal.hpp>
 #include <wng/schema.hpp>
+#include <wng/schema_validation.hpp>
 
 namespace
 {
@@ -448,6 +449,61 @@ namespace
         }
     }
 
+    wng::Result normalized_connection_callback_result(const wng::ConnectionValidation& validation)
+    {
+        if (validation.result != wng::Result::Ok) {
+            return validation.result;
+        }
+
+        return validation.status == wng::ConnectionStatus::Allowed ?
+            wng::Result::Ok :
+            wng::Result::InvalidConnection;
+    }
+
+    void append_schema_connection_validation(
+        const wng::Graph& graph,
+        const wng::GraphSchema& schema,
+        const wng::SchemaValidationOptions& options,
+        wng::ValidationReport& report)
+    {
+        if (options.callback == nullptr || report.has_errors()) {
+            return;
+        }
+
+        // Existing links have already passed structural and built-in schema checks.
+        // Calling the proposed-connection validator here would reject the same
+        // links as duplicates, so only the shared host schema callback is applied.
+        for (const wng::Link& link : graph.links()) {
+            try {
+                const wng::ConnectionValidation validation =
+                    options.callback->validate_connection(graph, schema, link.from, link.to);
+                const wng::Result result = normalized_connection_callback_result(validation);
+                if (validation.status == wng::ConnectionStatus::Allowed && result == wng::Result::Ok) {
+                    continue;
+                }
+
+                add_issue(
+                    report,
+                    wng::ValidationIssueCode::SchemaConnectionRejected,
+                    result,
+                    wng::NodeId {},
+                    wng::PortId {},
+                    link.id,
+                    "schema connection callback rejected link");
+            } catch (const std::bad_alloc&) {
+                add_issue(
+                    report,
+                    wng::ValidationIssueCode::SchemaConnectionRejected,
+                    wng::Result::AllocationFailure,
+                    wng::NodeId {},
+                    wng::PortId {},
+                    link.id,
+                    "allocation failed while running schema connection callback");
+                return;
+            }
+        }
+    }
+
     wng::ValidationReport validate_graph_structural(
         const wng::Graph& graph,
         const wng::GraphValidationOptions& options)
@@ -504,7 +560,7 @@ namespace wng
 
     ValidationReport validate_graph(const Graph& graph, const GraphSchema& schema)
     {
-        return validate_graph(graph, schema, GraphValidationOptions {});
+        return validate_graph(graph, schema, GraphSchemaValidationOptions {});
     }
 
     ValidationReport validate_graph(
@@ -512,10 +568,21 @@ namespace wng
         const GraphSchema& schema,
         const GraphValidationOptions& options)
     {
+        GraphSchemaValidationOptions combined_options;
+        combined_options.graph_options = options;
+        return validate_graph(graph, schema, combined_options);
+    }
+
+    ValidationReport validate_graph(
+        const Graph& graph,
+        const GraphSchema& schema,
+        const GraphSchemaValidationOptions& options)
+    {
         try {
-            ValidationReport report = validate_graph_structural(graph, options);
+            ValidationReport report = validate_graph_structural(graph, options.graph_options);
             validate_against_schema(graph, schema, report);
-            append_host_validation(graph, options, report);
+            append_schema_connection_validation(graph, schema, options.schema_options, report);
+            append_host_validation(graph, options.graph_options, report);
             return report;
         } catch (const std::bad_alloc&) {
             return allocation_failure_report();

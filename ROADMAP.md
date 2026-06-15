@@ -197,10 +197,12 @@ A patch should be rejected or split when it:
 
 ## Current best next direction
 
-The best immediate development direction is validation consistency.
+The best immediate development direction remains validation consistency and
+deterministic diagnostics hardening.
 
-The next code patch should prefer threading schema validation callback behavior
-into whole-graph schema validation, so proposed-connection host schema policies
-and existing-graph validation can share the same opt-in rule path.
+Prefer small patches that strengthen issue ordering, option composition,
+allocation-failure handling, and callback safety without mutating graphs or
+schemas.
 
-That work should stay read-only, deterministic, and graph-core only.
+Avoid moving into runtime evaluation, editor state, WPL integration, or file
+format ownership until the remaining graph-core validation seams are stable.

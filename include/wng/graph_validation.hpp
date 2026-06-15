@@ -9,6 +9,7 @@
 
 #include <wng/ids.hpp>
 #include <wng/result.hpp>
+#include <wng/schema_validation.hpp>
 
 namespace wng
 {
@@ -47,6 +48,7 @@ namespace wng
         DisabledPortDefinition,
         RequiredPortMissing,
         PortTypeMismatch,
+        SchemaConnectionRejected,
         CycleDetected,
         HostValidationIssue
     };
@@ -92,6 +94,14 @@ namespace wng
         const GraphValidationCallback* callback = nullptr;
     };
 
+    // Combines graph-level validation options with schema connection validation
+    // options so whole-graph schema validation can reuse proposed-connection host
+    // schema policy without merging the two callback lifetimes or responsibilities.
+    struct GraphSchemaValidationOptions {
+        GraphValidationOptions graph_options;
+        SchemaValidationOptions schema_options;
+    };
+
     // Performs non-mutating structural validation using only current Graph state.
     // This overload does not require or consult a GraphSchema and allows cycles.
     ValidationReport validate_graph(const Graph& graph);
@@ -114,4 +124,12 @@ namespace wng
         const Graph& graph,
         const GraphSchema& schema,
         const GraphValidationOptions& options);
+
+    // Performs structural and schema validation with explicit graph and schema
+    // validation options. Schema connection callbacks are applied to existing
+    // links only after structural and built-in schema checks have succeeded.
+    ValidationReport validate_graph(
+        const Graph& graph,
+        const GraphSchema& schema,
+        const GraphSchemaValidationOptions& options);
 }
