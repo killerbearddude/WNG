@@ -317,6 +317,28 @@ namespace
         }
     }
 
+    void append_host_validation(
+        const wng::Graph& graph,
+        const wng::GraphValidationOptions& options,
+        wng::ValidationReport& report)
+    {
+        if (options.callback == nullptr) {
+            return;
+        }
+
+        const wng::Result result = options.callback->validate_graph(graph, report);
+        if (result != wng::Result::Ok) {
+            add_issue(
+                report,
+                wng::ValidationIssueCode::HostValidationIssue,
+                result,
+                wng::NodeId {},
+                wng::PortId {},
+                wng::LinkId {},
+                "host validation callback failed");
+        }
+    }
+
     const wng::PortDefinition* find_port_definition(
         const wng::NodeDefinition& node_definition,
         const wng::Port& port)
@@ -472,7 +494,9 @@ namespace wng
         const GraphValidationOptions& options)
     {
         try {
-            return validate_graph_structural(graph, options);
+            ValidationReport report = validate_graph_structural(graph, options);
+            append_host_validation(graph, options, report);
+            return report;
         } catch (const std::bad_alloc&) {
             return allocation_failure_report();
         }
@@ -491,6 +515,7 @@ namespace wng
         try {
             ValidationReport report = validate_graph_structural(graph, options);
             validate_against_schema(graph, schema, report);
+            append_host_validation(graph, options, report);
             return report;
         } catch (const std::bad_alloc&) {
             return allocation_failure_report();
