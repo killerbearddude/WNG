@@ -524,6 +524,21 @@ namespace
 
 namespace wng
 {
+    GraphSchemaValidationOptions::GraphSchemaValidationOptions(
+        const GraphValidationOptions& graph_options_value,
+        const SchemaValidationOptions& schema_options_value)
+        : graph_options(graph_options_value)
+        , schema_options(schema_options_value)
+    {
+    }
+
+    GraphSchemaValidationOptions::GraphSchemaValidationOptions(
+        const SchemaValidationOptions& schema_options_value)
+        : graph_options()
+        , schema_options(schema_options_value)
+    {
+    }
+
     bool ValidationReport::valid() const
     {
         return !has_errors();
@@ -560,7 +575,7 @@ namespace wng
 
     ValidationReport validate_graph(const Graph& graph, const GraphSchema& schema)
     {
-        return validate_graph(graph, schema, GraphSchemaValidationOptions {});
+        return validate_graph(graph, schema, GraphValidationOptions {});
     }
 
     ValidationReport validate_graph(
@@ -568,9 +583,10 @@ namespace wng
         const GraphSchema& schema,
         const GraphValidationOptions& options)
     {
-        GraphSchemaValidationOptions combined_options;
-        combined_options.graph_options = options;
-        return validate_graph(graph, schema, combined_options);
+        return validate_graph(
+            graph,
+            schema,
+            GraphSchemaValidationOptions(options));
     }
 
     ValidationReport validate_graph(
