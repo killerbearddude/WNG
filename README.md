@@ -159,6 +159,7 @@ Current undo/redo status:
 - graph command history stacks: implemented
 - mixed graph-level history stacks: implemented
 - mixed graph command/schema migration undo ordering: implemented
+- graph command transaction commit integration: implemented
 - editor state undo: not implemented
 - selection undo: not implemented
 - transaction manager: not implemented
@@ -168,15 +169,17 @@ Current undo/redo status:
 ## Command transaction status
 
 WNG includes a minimal command transaction builder for grouping command results
-before committing them to history.
+before committing them to a history owner.
 
 Current command transaction status:
 
 - command result records: implemented
 - command batch records: implemented
 - command history stacks: implemented
+- graph-level history stacks: implemented
 - command transaction builder: implemented
-- commit transaction to history: implemented
+- commit transaction to graph command history: implemented
+- commit transaction to graph-level history: implemented
 - rollback pending transaction through undo application: implemented
 - automatic command execution: not implemented
 - editor transaction manager: not implemented
@@ -423,6 +426,7 @@ Current graph-level history status:
 
 - normal graph command batch entries: implemented
 - schema migration apply command entries: implemented
+- graph command transaction commit integration: implemented
 - mixed chronological undo/redo ordering: implemented
 - redo invalidation after new mixed entry: implemented
 - specialized GraphCommandHistory remains available: implemented

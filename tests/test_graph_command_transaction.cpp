@@ -150,7 +150,7 @@ int main()
 
     {
         // Verifies that committing a successful transaction stores one user-level
-        // undo step in history without mutating the graph again.
+        // undo step in specialized command history without mutating the graph again.
         wng::Graph graph;
         wng::GraphCommandHistory history;
         wng::GraphCommandTransaction transaction;
@@ -171,9 +171,59 @@ int main()
     }
 
     {
-        // Verifies that empty transactions are rejected at commit time so history
-        // cannot accumulate confusing no-op undo entries.
+        // Verifies that committing to mixed graph-level history stores the same
+        // command batch as one chronological graph history entry.
+        wng::Graph graph;
+        wng::GraphHistory history;
+        wng::GraphCommandTransaction transaction;
+        const wng::GraphCommandResult created =
+            wng::command_create_node(graph, make_node_desc("A"));
+        assert(transaction.append(created) == wng::Result::Ok);
+
+        const wng::GraphTransactionResult committed =
+            wng::commit_transaction(history, transaction);
+
+        assert(committed.result == wng::Result::Ok);
+        assert(committed.success());
+        assert(history.can_undo());
+        assert(!history.can_redo());
+        assert(history.undo_count() == 1U);
+        assert(history.redo_count() == 0U);
+        assert(graph.find_node(created.record.node) != nullptr);
+
+        const wng::GraphHistoryOperationResult undone =
+            wng::undo_last_graph_history(graph, history);
+        assert(undone.result == wng::Result::Ok);
+        assert(graph.find_node(created.record.node) == nullptr);
+        assert(!history.can_undo());
+        assert(history.can_redo());
+
+        const wng::GraphHistoryOperationResult redone =
+            wng::redo_last_graph_history(graph, history);
+        assert(redone.result == wng::Result::Ok);
+        assert(graph.find_node(created.record.node) != nullptr);
+        assert(history.can_undo());
+        assert(!history.can_redo());
+    }
+
+    {
+        // Verifies that empty transactions are rejected at commit time so
+        // specialized command history cannot accumulate confusing no-op undo entries.
         wng::GraphCommandHistory history;
+        const wng::GraphCommandTransaction transaction;
+
+        const wng::GraphTransactionResult committed =
+            wng::commit_transaction(history, transaction);
+
+        assert(committed.result == wng::Result::InvalidArgument);
+        assert(!history.can_undo());
+        assert(history.undo_count() == 0U);
+    }
+
+    {
+        // Verifies that empty transactions are rejected by mixed graph-level
+        // history for the same no-op history entry reason.
+        wng::GraphHistory history;
         const wng::GraphCommandTransaction transaction;
 
         const wng::GraphTransactionResult committed =
@@ -189,6 +239,22 @@ int main()
         // remain diagnostic data, not safe undo/redo history units.
         wng::Graph graph;
         wng::GraphCommandHistory history;
+        wng::GraphCommandTransaction transaction;
+        assert(transaction.append(failed_add_port(graph)) == wng::Result::Ok);
+
+        const wng::GraphTransactionResult committed =
+            wng::commit_transaction(history, transaction);
+
+        assert(committed.result == wng::Result::InvalidArgument);
+        assert(history.undo_count() == 0U);
+        assert(history.redo_count() == 0U);
+    }
+
+    {
+        // Verifies that failed transactions also cannot enter mixed graph-level
+        // history because failed command records are not undoable effects.
+        wng::Graph graph;
+        wng::GraphHistory history;
         wng::GraphCommandTransaction transaction;
         assert(transaction.append(failed_add_port(graph)) == wng::Result::Ok);
 

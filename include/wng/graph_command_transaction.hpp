@@ -9,6 +9,7 @@
 #include <wng/graph.hpp>
 #include <wng/graph_command.hpp>
 #include <wng/graph_command_history.hpp>
+#include <wng/graph_history.hpp>
 #include <wng/result.hpp>
 
 namespace wng
@@ -53,10 +54,18 @@ namespace wng
         GraphCommandBatch batch_;
     };
 
-    // Commits a successful, non-empty transaction to command history. This does
-    // not mutate Graph; graph mutations already happened when command helpers ran.
+    // Commits a successful, non-empty transaction to specialized graph command
+    // history. This does not mutate Graph; graph mutations already happened when
+    // command helpers ran.
     GraphTransactionResult commit_transaction(
         GraphCommandHistory& history,
+        const GraphCommandTransaction& transaction);
+
+    // Commits a successful, non-empty transaction to mixed graph-level history.
+    // This preserves compatibility with schema migration history ordering while
+    // still recording only the command batch produced by the transaction.
+    GraphTransactionResult commit_transaction(
+        GraphHistory& history,
         const GraphCommandTransaction& transaction);
 
     // Rolls back successful command effects currently stored in the transaction.
