@@ -14,7 +14,7 @@ WNG-0.1 implements only the graph-core milestone:
 - C++17 unit tests
 
 WNG-0.1 intentionally does not include WPL integration, rendering, editor state,
-selection, hit testing, serialization, undo/redo, replay, platform code, or X11.
+selection, hit testing, replay, platform code, or X11.
 
 ## WNG-0.2 status
 
