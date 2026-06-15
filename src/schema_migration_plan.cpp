@@ -50,13 +50,6 @@ namespace
         }
     }
 
-    void append_unique_port(std::vector<wng::PortId>& ids, wng::PortId id)
-    {
-        if (!contains_port_id(ids, id)) {
-            ids.push_back(id);
-        }
-    }
-
     bool target_validation_invalid(const wng::SchemaCompatibilityReport& report)
     {
         return report.status == wng::SchemaCompatibilityStatus::TargetInvalid ||
