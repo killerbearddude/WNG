@@ -65,7 +65,7 @@ Current validation status:
 - schema-aware connection validation: implemented
 - whole-graph structural validation: implemented
 - whole-graph schema validation: implemented
-- cycle validation: not yet implemented
+- acyclic graph validation option: implemented
 - host validation callbacks: not yet implemented
 
 ## Traversal status
@@ -78,7 +78,7 @@ Current traversal status:
 - upstream reachability: implemented
 - deterministic topological sort for acyclic graphs: implemented
 - cycle reporting for topological sort: implemented
-- cycle rejection as graph validation policy: not implemented
+- acyclic graph validation option: implemented
 - execution planning: implemented
 
 ## Dependency analysis status

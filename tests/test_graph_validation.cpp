@@ -86,6 +86,19 @@ namespace
         return id;
     }
 
+    void connect(wng::Graph& graph, wng::PortId from, wng::PortId to)
+    {
+        wng::LinkId link;
+        assert(graph.create_link(from, to, &link) == wng::Result::Ok);
+    }
+
+    wng::GraphValidationOptions require_acyclic()
+    {
+        wng::GraphValidationOptions options;
+        options.cycle_mode = wng::GraphCycleMode::RequireAcyclic;
+        return options;
+    }
+
     const wng::ValidationIssue* find_issue(
         const wng::ValidationReport& report,
         wng::ValidationIssueCode code)
@@ -97,6 +110,20 @@ namespace
         }
 
         return nullptr;
+    }
+
+    unsigned count_issues(
+        const wng::ValidationReport& report,
+        wng::ValidationIssueCode code)
+    {
+        unsigned count = 0;
+        for (const wng::ValidationIssue& issue : report.issues) {
+            if (issue.code == code) {
+                ++count;
+            }
+        }
+
+        return count;
     }
 
     void assert_issue(
@@ -265,13 +292,96 @@ int main()
         const wng::PortId input_port =
             add_port(graph, target, wng::PortKind::Input, "value", "number");
 
-        wng::LinkId link;
-        assert(graph.create_link(output_port, input_port, &link) == wng::Result::Ok);
+        connect(graph, output_port, input_port);
 
         const wng::ValidationReport report = wng::validate_graph(graph);
 
         assert(report.valid());
         assert(report.issues.empty());
+    }
+
+    {
+        // Acyclic mode accepts ordinary source-to-sink graph structure.
+        wng::Graph graph;
+        const wng::NodeId source = create_node(graph, "constant.number");
+        const wng::NodeId target = create_node(graph, "debug.print");
+        const wng::PortId output_port =
+            add_port(graph, source, wng::PortKind::Output, "value", "number");
+        const wng::PortId input_port =
+            add_port(graph, target, wng::PortKind::Input, "value", "number");
+        connect(graph, output_port, input_port);
+
+        const wng::ValidationReport report = wng::validate_graph(graph, require_acyclic());
+
+        assert(report.valid());
+        assert(find_issue(report, wng::ValidationIssueCode::CycleDetected) == nullptr);
+    }
+
+    {
+        // Default validation remains cycle-neutral. This preserves domain-neutral
+        // graph storage while allowing callers to request acyclic diagnostics.
+        wng::Graph graph;
+        const wng::NodeId a = create_node(graph, "node.a");
+        const wng::NodeId b = create_node(graph, "node.b");
+        const wng::PortId a_in = add_port(graph, a, wng::PortKind::Input, "in", "number");
+        const wng::PortId a_out = add_port(graph, a, wng::PortKind::Output, "out", "number");
+        const wng::PortId b_in = add_port(graph, b, wng::PortKind::Input, "in", "number");
+        const wng::PortId b_out = add_port(graph, b, wng::PortKind::Output, "out", "number");
+        connect(graph, a_out, b_in);
+        connect(graph, b_out, a_in);
+
+        const wng::ValidationReport report = wng::validate_graph(graph);
+
+        assert(report.valid());
+        assert(find_issue(report, wng::ValidationIssueCode::CycleDetected) == nullptr);
+    }
+
+    {
+        // Acyclic mode reports cycle diagnostics in deterministic unresolved-node
+        // order provided by topological_sort.
+        wng::Graph graph;
+        const wng::NodeId a = create_node(graph, "node.a");
+        const wng::NodeId b = create_node(graph, "node.b");
+        const wng::PortId a_in = add_port(graph, a, wng::PortKind::Input, "in", "number");
+        const wng::PortId a_out = add_port(graph, a, wng::PortKind::Output, "out", "number");
+        const wng::PortId b_in = add_port(graph, b, wng::PortKind::Input, "in", "number");
+        const wng::PortId b_out = add_port(graph, b, wng::PortKind::Output, "out", "number");
+        connect(graph, a_out, b_in);
+        connect(graph, b_out, a_in);
+
+        const wng::ValidationReport report = wng::validate_graph(graph, require_acyclic());
+
+        assert(!report.valid());
+        assert(count_issues(report, wng::ValidationIssueCode::CycleDetected) == 2U);
+        assert(report.issues[0].code == wng::ValidationIssueCode::CycleDetected);
+        assert(report.issues[0].node == a);
+        assert(report.issues[0].result == wng::Result::InvalidConnection);
+        assert(report.issues[1].code == wng::ValidationIssueCode::CycleDetected);
+        assert(report.issues[1].node == b);
+        assert(report.issues[1].result == wng::Result::InvalidConnection);
+    }
+
+    {
+        // Schema validation composes with acyclic mode: graph-level cycle issues
+        // are reported without suppressing normal schema compatibility checks.
+        wng::Graph graph;
+        const wng::NodeId a = create_node(graph, "math.add");
+        const wng::NodeId b = create_node(graph, "math.add");
+        const wng::PortId a_in = add_port(graph, a, wng::PortKind::Input, "a", "number");
+        const wng::PortId a_out = add_port(graph, a, wng::PortKind::Output, "result", "number");
+        const wng::PortId b_in = add_port(graph, b, wng::PortKind::Input, "a", "number");
+        const wng::PortId b_out = add_port(graph, b, wng::PortKind::Output, "result", "number");
+        connect(graph, a_out, b_in);
+        connect(graph, b_out, a_in);
+
+        const wng::GraphSchema schema = schema_with(node_definition());
+        const wng::ValidationReport report =
+            wng::validate_graph(graph, schema, require_acyclic());
+
+        assert(!report.valid());
+        assert(count_issues(report, wng::ValidationIssueCode::CycleDetected) == 2U);
+        assert(find_issue(report, wng::ValidationIssueCode::MissingNodeDefinition) == nullptr);
+        assert(find_issue(report, wng::ValidationIssueCode::RequiredPortMissing) == nullptr);
     }
 
     return 0;

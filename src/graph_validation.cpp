@@ -10,6 +10,7 @@
 #include <wng/graph_validation.hpp>
 
 #include <wng/graph.hpp>
+#include <wng/graph_traversal.hpp>
 #include <wng/schema.hpp>
 
 namespace
@@ -263,6 +264,59 @@ namespace
         }
     }
 
+    void validate_acyclic_mode(
+        const wng::Graph& graph,
+        const wng::GraphValidationOptions& options,
+        wng::ValidationReport& report)
+    {
+        if (options.cycle_mode != wng::GraphCycleMode::RequireAcyclic || report.has_errors()) {
+            return;
+        }
+
+        const wng::TopologicalOrderResult order = wng::topological_sort(graph);
+        if (order.result == wng::Result::Ok) {
+            return;
+        }
+
+        if (order.result == wng::Result::AllocationFailure) {
+            add_issue(
+                report,
+                wng::ValidationIssueCode::InvalidNodeId,
+                wng::Result::AllocationFailure,
+                wng::NodeId {},
+                wng::PortId {},
+                wng::LinkId {},
+                "allocation failed while checking graph cycles");
+            return;
+        }
+
+        if (order.unresolved_nodes.empty()) {
+            add_issue(
+                report,
+                wng::ValidationIssueCode::CycleDetected,
+                wng::Result::InvalidConnection,
+                wng::NodeId {},
+                wng::PortId {},
+                wng::LinkId {},
+                "graph contains a cycle");
+            return;
+        }
+
+        // Reuse topological_sort's deterministic unresolved node ordering. One
+        // issue per unresolved node gives diagnostics stable anchors without
+        // requiring a separate cycle path extraction algorithm.
+        for (wng::NodeId node : order.unresolved_nodes) {
+            add_issue(
+                report,
+                wng::ValidationIssueCode::CycleDetected,
+                wng::Result::InvalidConnection,
+                node,
+                wng::PortId {},
+                wng::LinkId {},
+                "graph contains a cycle");
+        }
+    }
+
     const wng::PortDefinition* find_port_definition(
         const wng::NodeDefinition& node_definition,
         const wng::Port& port)
@@ -372,7 +426,9 @@ namespace
         }
     }
 
-    wng::ValidationReport validate_graph_structural(const wng::Graph& graph)
+    wng::ValidationReport validate_graph_structural(
+        const wng::Graph& graph,
+        const wng::GraphValidationOptions& options)
     {
         wng::ValidationReport report;
 
@@ -382,6 +438,7 @@ namespace
         validate_port_list(graph, report);
         validate_node_owned_port_references(graph, report);
         validate_links(graph, report);
+        validate_acyclic_mode(graph, options, report);
 
         return report;
     }
@@ -407,8 +464,15 @@ namespace wng
 
     ValidationReport validate_graph(const Graph& graph)
     {
+        return validate_graph(graph, GraphValidationOptions {});
+    }
+
+    ValidationReport validate_graph(
+        const Graph& graph,
+        const GraphValidationOptions& options)
+    {
         try {
-            return validate_graph_structural(graph);
+            return validate_graph_structural(graph, options);
         } catch (const std::bad_alloc&) {
             return allocation_failure_report();
         }
@@ -416,8 +480,16 @@ namespace wng
 
     ValidationReport validate_graph(const Graph& graph, const GraphSchema& schema)
     {
+        return validate_graph(graph, schema, GraphValidationOptions {});
+    }
+
+    ValidationReport validate_graph(
+        const Graph& graph,
+        const GraphSchema& schema,
+        const GraphValidationOptions& options)
+    {
         try {
-            ValidationReport report = validate_graph_structural(graph);
+            ValidationReport report = validate_graph_structural(graph, options);
             validate_against_schema(graph, schema, report);
             return report;
         } catch (const std::bad_alloc&) {
