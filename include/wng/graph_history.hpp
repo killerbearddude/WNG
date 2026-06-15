@@ -43,6 +43,8 @@ namespace wng
     struct GraphHistoryOperationResult {
         Result result = Result::Ok;
 
+        // Returns true when the delegated graph operation and stack transition
+        // completed with Result::Ok.
         bool success() const;
     };
 
@@ -73,10 +75,16 @@ namespace wng
         // use this to invalidate redo after out-of-band graph changes.
         void clear_redo();
 
+        // Reports whether at least one mixed history entry can be undone.
         bool can_undo() const;
+
+        // Reports whether at least one mixed history entry can be redone.
         bool can_redo() const;
 
+        // Returns the number of entries currently available for undo.
         std::size_t undo_count() const;
+
+        // Returns the number of entries currently available for redo.
         std::size_t redo_count() const;
 
     private:
