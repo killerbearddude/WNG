@@ -149,9 +149,28 @@ namespace wng
 
         try {
             // Commit transfers a completed user-level graph operation into the
-            // history owner. It does not mutate Graph because command helpers
-            // already performed the graph mutations before append().
+            // specialized command history owner. It does not mutate Graph because
+            // command helpers already performed the graph mutations before append().
             return transaction_failure(history.record_batch(transaction.batch()));
+        } catch (const std::bad_alloc&) {
+            return transaction_failure(Result::AllocationFailure);
+        }
+    }
+
+    GraphTransactionResult commit_transaction(
+        GraphHistory& history,
+        const GraphCommandTransaction& transaction)
+    {
+        if (!transaction.committable()) {
+            return transaction_failure(Result::InvalidArgument);
+        }
+
+        try {
+            // The mixed graph-level history owns user chronology across command
+            // batches and schema migration records. A transaction contributes only
+            // its already-executed graph command batch.
+            return transaction_failure(
+                history.record_graph_command_batch(transaction.batch()));
         } catch (const std::bad_alloc&) {
             return transaction_failure(Result::AllocationFailure);
         }
