@@ -2,6 +2,7 @@
 // Built-in validation is deliberately evaluated first so schema rules cannot
 // weaken core structural safety.
 
+#include <new>
 #include <string>
 
 #include <wng/schema_validation.hpp>
@@ -70,7 +71,11 @@ namespace
             return allow();
         }
 
-        return options.callback->validate_connection(graph, schema, from, to);
+        try {
+            return options.callback->validate_connection(graph, schema, from, to);
+        } catch (const std::bad_alloc&) {
+            return reject(wng::Result::AllocationFailure);
+        }
     }
 }
 
