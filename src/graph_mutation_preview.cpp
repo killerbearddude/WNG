@@ -91,29 +91,25 @@ namespace
         return request;
     }
 
-    wng::GraphMutationPreview apply_host_preview(
+    wng::Result append_host_preview(
         const wng::Graph& graph,
         const wng::GraphMutationPreviewHostRequest& request,
         const wng::GraphMutationPreviewOptions& options,
-        wng::GraphMutationPreview preview)
+        wng::GraphMutationPreview& preview)
     {
         if (options.callback == nullptr) {
-            return preview;
+            return wng::Result::Ok;
         }
 
         try {
-            const wng::Result result = options.callback->preview_mutation(
+            return options.callback->preview_mutation(
                 graph,
                 request,
                 preview,
                 preview.host_consequences);
-            if (result != wng::Result::Ok) {
-                return preview_failure(result);
-            }
-
-            return preview;
         } catch (const std::bad_alloc&) {
-            return preview_failure(wng::Result::AllocationFailure);
+            preview.host_consequences.clear();
+            return wng::Result::AllocationFailure;
         }
     }
 }
@@ -174,7 +170,16 @@ namespace wng
                 }
             }
 
-            return apply_host_preview(graph, destroy_node_request(node), options, preview);
+            const Result host_result = append_host_preview(
+                graph,
+                destroy_node_request(node),
+                options,
+                preview);
+            if (host_result != Result::Ok) {
+                return preview_failure(host_result);
+            }
+
+            return preview;
         } catch (const std::bad_alloc&) {
             return preview_failure(Result::AllocationFailure);
         }
@@ -212,7 +217,16 @@ namespace wng
                 }
             }
 
-            return apply_host_preview(graph, remove_port_request(port), options, preview);
+            const Result host_result = append_host_preview(
+                graph,
+                remove_port_request(port),
+                options,
+                preview);
+            if (host_result != Result::Ok) {
+                return preview_failure(host_result);
+            }
+
+            return preview;
         } catch (const std::bad_alloc&) {
             return preview_failure(Result::AllocationFailure);
         }
@@ -241,7 +255,17 @@ namespace wng
 
             GraphMutationPreview preview;
             preview.summary.removed_links.push_back(link);
-            return apply_host_preview(graph, destroy_link_request(link), options, preview);
+
+            const Result host_result = append_host_preview(
+                graph,
+                destroy_link_request(link),
+                options,
+                preview);
+            if (host_result != Result::Ok) {
+                return preview_failure(host_result);
+            }
+
+            return preview;
         } catch (const std::bad_alloc&) {
             return preview_failure(Result::AllocationFailure);
         }
