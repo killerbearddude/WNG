@@ -1,4 +1,4 @@
-// Computes non-mutating previews for destructive graph mutations.
+// Computes non-mutating previews for graph removals.
 // The preview layer mirrors GraphMutationSummary ordering so editor,
 // transaction, and command systems can inspect consequences before mutation.
 
