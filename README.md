@@ -42,7 +42,7 @@ Current schema status:
 - schema-aware port creation helper: implemented
 - schema-aware link creation helper: implemented
 - schema-defined node instantiation: implemented
-- host validation callbacks: not yet implemented
+- host validation callbacks: implemented
 
 ## Node type identity
 
