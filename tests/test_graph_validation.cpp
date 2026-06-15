@@ -62,10 +62,24 @@ namespace
         return node;
     }
 
+    wng::NodeDesc empty_title_desc(const std::string& type = "math.add")
+    {
+        wng::NodeDesc node;
+        node.type = type;
+        return node;
+    }
+
     wng::NodeId create_node(wng::Graph& graph, const std::string& type)
     {
         wng::NodeId node;
         assert(graph.create_node(desc(type), &node) == wng::Result::Ok);
+        return node;
+    }
+
+    wng::NodeId create_node_with_empty_title(wng::Graph& graph, const std::string& type)
+    {
+        wng::NodeId node;
+        assert(graph.create_node(empty_title_desc(type), &node) == wng::Result::Ok);
         return node;
     }
 
@@ -98,6 +112,46 @@ namespace
         options.cycle_mode = wng::GraphCycleMode::RequireAcyclic;
         return options;
     }
+
+    class EmptyTitleCallback final : public wng::GraphValidationCallback {
+    public:
+        mutable unsigned calls = 0;
+
+        wng::Result validate_graph(
+            const wng::Graph& graph,
+            wng::ValidationReport& report) const override
+        {
+            ++calls;
+
+            // Host diagnostics are domain-specific and are appended after core
+            // validation. This test callback treats an empty title as a host error.
+            for (const wng::Node& node : graph.nodes()) {
+                if (!node.title.empty()) {
+                    continue;
+                }
+
+                wng::ValidationIssue issue;
+                issue.severity = wng::ValidationSeverity::Error;
+                issue.code = wng::ValidationIssueCode::HostValidationIssue;
+                issue.result = wng::Result::InvalidArgument;
+                issue.node = node.id;
+                issue.message = "host requires node title";
+                report.issues.push_back(issue);
+            }
+
+            return wng::Result::Ok;
+        }
+    };
+
+    class FailingCallback final : public wng::GraphValidationCallback {
+    public:
+        wng::Result validate_graph(
+            const wng::Graph&,
+            wng::ValidationReport&) const override
+        {
+            return wng::Result::InvalidArgument;
+        }
+    };
 
     const wng::ValidationIssue* find_issue(
         const wng::ValidationReport& report,
@@ -382,6 +436,94 @@ int main()
         assert(count_issues(report, wng::ValidationIssueCode::CycleDetected) == 2U);
         assert(find_issue(report, wng::ValidationIssueCode::MissingNodeDefinition) == nullptr);
         assert(find_issue(report, wng::ValidationIssueCode::RequiredPortMissing) == nullptr);
+    }
+
+    {
+        // Without a callback, host-specific diagnostics are absent and the default
+        // validation path remains unchanged.
+        wng::Graph graph;
+        create_node_with_empty_title(graph, "host.node");
+
+        const wng::ValidationReport report = wng::validate_graph(graph);
+
+        assert(report.valid());
+        assert(find_issue(report, wng::ValidationIssueCode::HostValidationIssue) == nullptr);
+    }
+
+    {
+        // Host callbacks append diagnostics after built-in structural validation.
+        wng::Graph graph;
+        const wng::NodeId node = create_node_with_empty_title(graph, "host.node");
+        EmptyTitleCallback callback;
+        wng::GraphValidationOptions options;
+        options.callback = &callback;
+
+        const wng::ValidationReport report = wng::validate_graph(graph, options);
+
+        assert(callback.calls == 1U);
+        assert(!report.valid());
+        assert(report.issues.size() == 1U);
+        assert(report.issues[0].code == wng::ValidationIssueCode::HostValidationIssue);
+        assert(report.issues[0].node == node);
+        assert(report.issues[0].result == wng::Result::InvalidArgument);
+    }
+
+    {
+        // Schema validation diagnostics are emitted before host diagnostics, giving
+        // callers deterministic layering from core to schema to host checks.
+        wng::Graph graph;
+        const wng::NodeId node = create_node_with_empty_title(graph, "unknown.node");
+        const wng::GraphSchema schema = schema_with(node_definition());
+        EmptyTitleCallback callback;
+        wng::GraphValidationOptions options;
+        options.callback = &callback;
+
+        const wng::ValidationReport report = wng::validate_graph(graph, schema, options);
+
+        assert(callback.calls == 1U);
+        assert(!report.valid());
+        assert(report.issues.size() == 2U);
+        assert(report.issues[0].code == wng::ValidationIssueCode::MissingNodeDefinition);
+        assert(report.issues[0].node == node);
+        assert(report.issues[1].code == wng::ValidationIssueCode::HostValidationIssue);
+        assert(report.issues[1].node == node);
+    }
+
+    {
+        // A non-Ok callback result is converted into a host validation issue even
+        // when the callback did not append its own diagnostic.
+        wng::Graph graph;
+        FailingCallback callback;
+        wng::GraphValidationOptions options;
+        options.callback = &callback;
+
+        const wng::ValidationReport report = wng::validate_graph(graph, options);
+
+        assert(!report.valid());
+        assert(report.issues.size() == 1U);
+        assert(report.issues[0].code == wng::ValidationIssueCode::HostValidationIssue);
+        assert(report.issues[0].result == wng::Result::InvalidArgument);
+    }
+
+    {
+        // The host callback receives a const Graph. Validation must not alter graph
+        // storage counts or IDs while host diagnostics are appended.
+        wng::Graph graph;
+        const wng::NodeId node = create_node_with_empty_title(graph, "host.node");
+        const std::size_t node_count = graph.nodes().size();
+        const std::size_t port_count = graph.ports().size();
+        const std::size_t link_count = graph.links().size();
+        EmptyTitleCallback callback;
+        wng::GraphValidationOptions options;
+        options.callback = &callback;
+
+        const wng::ValidationReport report = wng::validate_graph(graph, options);
+
+        assert(!report.valid());
+        assert(graph.find_node(node) != nullptr);
+        assert(graph.nodes().size() == node_count);
+        assert(graph.ports().size() == port_count);
+        assert(graph.links().size() == link_count);
     }
 
     return 0;
