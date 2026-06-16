@@ -69,6 +69,18 @@ namespace
             target,
             rename_policy(from, to));
     }
+
+    void duplicate_first_before_node(wng::SchemaMigrationApplyCommandRecord& record)
+    {
+        assert(!record.before.graph.nodes.empty());
+        record.before.graph.nodes.push_back(record.before.graph.nodes.front());
+    }
+
+    void duplicate_first_after_node(wng::SchemaMigrationApplyCommandRecord& record)
+    {
+        assert(!record.after.graph.nodes.empty());
+        record.after.graph.nodes.push_back(record.after.graph.nodes.front());
+    }
 }
 
 int main()
@@ -188,6 +200,71 @@ int main()
         wng::SchemaMigrationApplyCommandHistory history;
         assert(history.record(failed.record) == wng::Result::InvalidArgument);
         assert(!history.can_undo());
+    }
+
+    {
+        // If undo cannot restore the recorded before snapshot, the command must
+        // remain undoable and must not be moved onto redo.
+        wng::Graph graph;
+        const wng::NodeId node = create_node(graph, "legacy.node");
+        wng::SchemaMigrationApplyCommandResult command =
+            apply_rename_command(graph, "legacy.node", "modern.node");
+        assert(command.success());
+        assert(require_node(graph, node).type == "modern.node");
+
+        duplicate_first_before_node(command.record);
+
+        wng::SchemaMigrationApplyCommandHistory history;
+        assert(history.record(command.record) == wng::Result::Ok);
+        assert(history.can_undo());
+        assert(!history.can_redo());
+        assert(history.undo_count() == 1U);
+        assert(history.redo_count() == 0U);
+
+        const wng::SchemaMigrationApplyCommandHistoryResult undo =
+            wng::undo_last_schema_migration_apply_command(graph, history);
+        assert(!undo.success());
+        assert(undo.result == wng::Result::AlreadyExists);
+        assert(require_node(graph, node).type == "modern.node");
+        assert(history.can_undo());
+        assert(!history.can_redo());
+        assert(history.undo_count() == 1U);
+        assert(history.redo_count() == 0U);
+    }
+
+    {
+        // If redo cannot restore the recorded after snapshot, the command must
+        // remain redoable and must not be moved back onto undo.
+        wng::Graph graph;
+        const wng::NodeId node = create_node(graph, "legacy.node");
+        wng::SchemaMigrationApplyCommandResult command =
+            apply_rename_command(graph, "legacy.node", "modern.node");
+        assert(command.success());
+        assert(require_node(graph, node).type == "modern.node");
+
+        duplicate_first_after_node(command.record);
+
+        wng::SchemaMigrationApplyCommandHistory history;
+        assert(history.record(command.record) == wng::Result::Ok);
+
+        const wng::SchemaMigrationApplyCommandHistoryResult undo =
+            wng::undo_last_schema_migration_apply_command(graph, history);
+        assert(undo.success());
+        assert(require_node(graph, node).type == "legacy.node");
+        assert(!history.can_undo());
+        assert(history.can_redo());
+        assert(history.undo_count() == 0U);
+        assert(history.redo_count() == 1U);
+
+        const wng::SchemaMigrationApplyCommandHistoryResult redo =
+            wng::redo_last_schema_migration_apply_command(graph, history);
+        assert(!redo.success());
+        assert(redo.result == wng::Result::AlreadyExists);
+        assert(require_node(graph, node).type == "legacy.node");
+        assert(!history.can_undo());
+        assert(history.can_redo());
+        assert(history.undo_count() == 0U);
+        assert(history.redo_count() == 1U);
     }
 
     {
