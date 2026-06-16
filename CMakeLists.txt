@@ -106,6 +106,7 @@ wng_add_test(test_graph_command_transaction_batch_status tests/test_graph_comman
 wng_add_test(test_graph_diff tests/test_graph_diff.cpp)
 wng_add_test(test_graph_mutation_preview tests/test_graph_mutation_preview.cpp)
 wng_add_test(test_graph_snapshot tests/test_graph_snapshot.cpp)
+wng_add_test(test_graph_snapshot_high_ids tests/test_graph_snapshot_high_ids.cpp)
 wng_add_test(test_schema_snapshot tests/test_schema_snapshot.cpp)
 wng_add_test(test_schema_diff tests/test_schema_diff.cpp)
 wng_add_test(test_schema_compatibility tests/test_schema_compatibility.cpp)
