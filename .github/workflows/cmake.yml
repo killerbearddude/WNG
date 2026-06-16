@@ -8,18 +8,26 @@ on:
 
 jobs:
   build-test:
-    name: Configure, build, and test
+    name: Configure and build (${{ matrix.build_type }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type:
+          - Debug
+          - Release
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
 
       - name: Build
         run: cmake --build build
 
       - name: Test
+        if: matrix.build_type == 'Debug'
         run: ctest --test-dir build --output-on-failure
