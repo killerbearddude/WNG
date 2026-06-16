@@ -123,6 +123,7 @@ wng_add_test(test_schema_migration_apply tests/test_schema_migration_apply.cpp)
 wng_add_test(test_schema_migration_apply_destructive tests/test_schema_migration_apply_destructive.cpp)
 wng_add_test(test_schema_migration_apply_command tests/test_schema_migration_apply_command.cpp)
 wng_add_test(test_schema_migration_apply_command_history tests/test_schema_migration_apply_command_history.cpp)
+wng_add_test(test_schema_history_record tests/test_schema_history_record.cpp)
 set_tests_properties(test_public_header_policy PROPERTIES
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
