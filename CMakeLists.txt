@@ -54,6 +54,17 @@ endif()
 
 enable_testing()
 
+function(wng_keep_assertions_enabled name)
+    # WNG tests intentionally use assert() for checks and fixture setup.
+    # Keep those assertions active in Release test binaries so Release CTest
+    # validates the same test semantics as Debug without changing wng_core flags.
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(${name} PRIVATE $<$<CONFIG:Release>:-UNDEBUG>)
+    elseif (MSVC)
+        target_compile_options(${name} PRIVATE $<$<CONFIG:Release>:/UNDEBUG>)
+    endif()
+endfunction()
+
 function(wng_add_test name source)
     add_executable(${name} ${source})
     target_link_libraries(${name} PRIVATE wng_core)
@@ -66,6 +77,7 @@ function(wng_add_test name source)
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         target_compile_options(${name} PRIVATE -Wall -Wextra -Wpedantic)
     endif()
+    wng_keep_assertions_enabled(${name})
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
@@ -146,6 +158,7 @@ function(wng_add_header_compile_test name header)
         target_compile_options(${name} PRIVATE -Wall -Wextra -Wpedantic)
     endif()
 
+    wng_keep_assertions_enabled(${name})
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
