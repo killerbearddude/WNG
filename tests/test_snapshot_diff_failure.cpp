@@ -23,8 +23,9 @@ namespace
     {
         wng::Graph graph;
         wng::NodeId node;
-        assert(graph.create_node(make_node_desc("Snapshot node"), &node) ==
-            wng::Result::Ok);
+        const wng::Result create_result =
+            graph.create_node(make_node_desc("Snapshot node"), &node);
+        assert(create_result == wng::Result::Ok);
 
         const wng::GraphSnapshotResult snapshot = wng::capture_graph_snapshot(graph);
         assert(snapshot.result == wng::Result::Ok);
