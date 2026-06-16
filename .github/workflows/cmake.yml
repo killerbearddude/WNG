@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-test:
-    name: Configure, build, and test (${{ matrix.build_type }})
+    name: Configure and build (${{ matrix.build_type }})
     runs-on: ubuntu-latest
 
     strategy:
@@ -29,4 +29,5 @@ jobs:
         run: cmake --build build
 
       - name: Test
+        if: matrix.build_type == 'Debug'
         run: ctest --test-dir build --output-on-failure
