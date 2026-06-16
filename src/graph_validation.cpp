@@ -16,6 +16,11 @@
 
 namespace
 {
+    wng::Result resource_exhausted_result()
+    {
+        return static_cast<wng::Result>(5);
+    }
+
     bool is_valid_port_kind(wng::PortKind kind)
     {
         return kind == wng::PortKind::Input || kind == wng::PortKind::Output;
@@ -62,12 +67,12 @@ namespace
         try {
             add_issue(
                 report,
-                wng::ValidationIssueCode::InvalidNodeId,
-                wng::Result::AllocationFailure,
+                wng::ValidationIssueCode::ResourceExhausted,
+                resource_exhausted_result(),
                 wng::NodeId {},
                 wng::PortId {},
                 wng::LinkId {},
-                "allocation failed while building validation report");
+                "resource exhausted while building validation report");
         } catch (const std::bad_alloc&) {
         }
         return report;
@@ -279,15 +284,15 @@ namespace
             return;
         }
 
-        if (order.result == wng::Result::AllocationFailure) {
+        if (order.result == resource_exhausted_result()) {
             add_issue(
                 report,
-                wng::ValidationIssueCode::InvalidNodeId,
-                wng::Result::AllocationFailure,
+                wng::ValidationIssueCode::ResourceExhausted,
+                resource_exhausted_result(),
                 wng::NodeId {},
                 wng::PortId {},
                 wng::LinkId {},
-                "allocation failed while checking graph cycles");
+                "resource exhausted while checking graph cycles");
             return;
         }
 
@@ -303,9 +308,6 @@ namespace
             return;
         }
 
-        // Reuse topological_sort's deterministic unresolved node ordering. One
-        // issue per unresolved node gives diagnostics stable anchors without
-        // requiring a separate cycle path extraction algorithm.
         for (wng::NodeId node : order.unresolved_nodes) {
             add_issue(
                 report,
@@ -422,8 +424,6 @@ namespace
         const wng::GraphSchema& schema,
         wng::ValidationReport& report)
     {
-        // Schema validation extends structural validation. It appends diagnostics
-        // in node order and never suppresses lower-level graph issues.
         for (const wng::Node& node : graph.nodes()) {
             const wng::NodeDefinition* node_definition = schema.find_node_definition(node.type);
             if (node_definition == nullptr) {
@@ -470,9 +470,6 @@ namespace
             return;
         }
 
-        // Existing links have already passed structural and built-in schema checks.
-        // Calling the proposed-connection validator here would reject the same
-        // links as duplicates, so only the shared host schema callback is applied.
         for (const wng::Link& link : graph.links()) {
             try {
                 const wng::ConnectionValidation validation =
@@ -494,11 +491,11 @@ namespace
                 add_issue(
                     report,
                     wng::ValidationIssueCode::SchemaConnectionRejected,
-                    wng::Result::AllocationFailure,
+                    resource_exhausted_result(),
                     wng::NodeId {},
                     wng::PortId {},
                     link.id,
-                    "allocation failed while running schema connection callback");
+                    "resource exhausted while running schema connection callback");
                 return;
             }
         }
@@ -510,8 +507,6 @@ namespace
     {
         wng::ValidationReport report;
 
-        // Deterministic issue order is part of the API contract for tests and
-        // future editor diagnostics. Keep these passes ordered by graph storage.
         validate_node_list(graph, report);
         validate_port_list(graph, report);
         validate_node_owned_port_references(graph, report);
