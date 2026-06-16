@@ -98,6 +98,8 @@ namespace wng
     // Combines graph-level validation options with schema connection validation
     // options so whole-graph schema validation can reuse proposed-connection host
     // schema policy without merging the two callback lifetimes or responsibilities.
+    // Construction remains explicit so empty-brace calls keep resolving to the
+    // graph-options overload for source compatibility.
     struct GraphSchemaValidationOptions {
         explicit GraphSchemaValidationOptions(
             const GraphValidationOptions& graph_options,
