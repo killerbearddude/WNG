@@ -159,6 +159,111 @@ namespace wng
         return availability;
     }
 
+    inline GraphEditorStateCommandResult select_graph_editor_node(
+        GraphEditorState& editor_state,
+        NodeId node)
+    {
+        GraphEditorStateCommandResult result;
+        result.before = graph_editor_command_availability(editor_state);
+        result.result = editor_state.select_node(node);
+        result.changed = result.success();
+        result.after = graph_editor_command_availability(editor_state);
+        return result;
+    }
+
+    inline GraphEditorStateCommandResult select_graph_editor_port(
+        GraphEditorState& editor_state,
+        PortId port)
+    {
+        GraphEditorStateCommandResult result;
+        result.before = graph_editor_command_availability(editor_state);
+        result.result = editor_state.select_port(port);
+        result.changed = result.success();
+        result.after = graph_editor_command_availability(editor_state);
+        return result;
+    }
+
+    inline GraphEditorStateCommandResult select_graph_editor_link(
+        GraphEditorState& editor_state,
+        LinkId link)
+    {
+        GraphEditorStateCommandResult result;
+        result.before = graph_editor_command_availability(editor_state);
+        result.result = editor_state.select_link(link);
+        result.changed = result.success();
+        result.after = graph_editor_command_availability(editor_state);
+        return result;
+    }
+
+    inline GraphEditorStateCommandResult set_graph_editor_hovered_node(
+        GraphEditorState& editor_state,
+        NodeId node)
+    {
+        GraphEditorStateCommandResult result;
+        result.before = graph_editor_command_availability(editor_state);
+        const GraphEditorElement previous = editor_state.hovered();
+        result.result = editor_state.set_hovered_node(node);
+        result.changed = result.success() &&
+            (previous.kind != GraphEditorElementKind::Node || previous.node != node);
+        result.after = graph_editor_command_availability(editor_state);
+        return result;
+    }
+
+    inline GraphEditorStateCommandResult set_graph_editor_hovered_port(
+        GraphEditorState& editor_state,
+        PortId port)
+    {
+        GraphEditorStateCommandResult result;
+        result.before = graph_editor_command_availability(editor_state);
+        const GraphEditorElement previous = editor_state.hovered();
+        result.result = editor_state.set_hovered_port(port);
+        result.changed = result.success() &&
+            (previous.kind != GraphEditorElementKind::Port || previous.port != port);
+        result.after = graph_editor_command_availability(editor_state);
+        return result;
+    }
+
+    inline GraphEditorStateCommandResult set_graph_editor_hovered_link(
+        GraphEditorState& editor_state,
+        LinkId link)
+    {
+        GraphEditorStateCommandResult result;
+        result.before = graph_editor_command_availability(editor_state);
+        const GraphEditorElement previous = editor_state.hovered();
+        result.result = editor_state.set_hovered_link(link);
+        result.changed = result.success() &&
+            (previous.kind != GraphEditorElementKind::Link || previous.link != link);
+        result.after = graph_editor_command_availability(editor_state);
+        return result;
+    }
+
+    inline GraphEditorStateCommandResult begin_graph_editor_pending_link(
+        GraphEditorState& editor_state,
+        PortId from)
+    {
+        GraphEditorStateCommandResult result;
+        result.before = graph_editor_command_availability(editor_state);
+        const GraphEditorPendingLink previous = editor_state.pending_link();
+        result.result = editor_state.begin_pending_link(from);
+        result.changed = result.success() &&
+            (!previous.active || previous.from != from || previous.candidate_to.value != 0U);
+        result.after = graph_editor_command_availability(editor_state);
+        return result;
+    }
+
+    inline GraphEditorStateCommandResult set_graph_editor_pending_link_target(
+        GraphEditorState& editor_state,
+        PortId candidate_to)
+    {
+        GraphEditorStateCommandResult result;
+        result.before = graph_editor_command_availability(editor_state);
+        const GraphEditorPendingLink previous = editor_state.pending_link();
+        result.result = editor_state.set_pending_link_target(candidate_to);
+        result.changed = result.success() && previous.candidate_to != candidate_to;
+        result.after = graph_editor_command_availability(editor_state);
+        return result;
+    }
+
     inline GraphEditorStateCommandResult clear_graph_editor_selection(
         GraphEditorState& editor_state)
     {
