@@ -30,6 +30,16 @@ namespace wng
         CancelPendingLink
     };
 
+    // Explains why a no-operand editor-state command is unavailable. The values
+    // describe graph-core state only and do not encode UI presentation policy.
+    enum class GraphEditorCommandUnavailableReason {
+        None,
+        NoSelection,
+        NoHover,
+        NoActivePendingLink,
+        InvalidCommand
+    };
+
     // Stable-ID reference to one graph object. Only the field matching kind is
     // meaningful; the other IDs remain invalid sentinel values.
     struct GraphEditorElement {
@@ -71,6 +81,15 @@ namespace wng
                 cancel_pending_link ||
                 complete_pending_link;
         }
+    };
+
+    // Read-only command status for a no-operand editor-state command. Availability
+    // remains a simple boolean, while unavailable_reason gives higher layers a
+    // deterministic explanation without involving UI widgets or presentation text.
+    struct GraphEditorCommandStatus {
+        bool available = false;
+        GraphEditorCommandUnavailableReason unavailable_reason =
+            GraphEditorCommandUnavailableReason::None;
     };
 
     // Reports the outcome of an editor-state-only command. These commands do not
@@ -168,29 +187,58 @@ namespace wng
         return availability;
     }
 
+    inline GraphEditorCommandStatus graph_editor_command_status(
+        const GraphEditorCommandAvailability& availability,
+        GraphEditorCommandId command)
+    {
+        GraphEditorCommandStatus status;
+        switch (command) {
+        case GraphEditorCommandId::ClearSelection:
+            status.available = availability.clear_selection;
+            status.unavailable_reason = status.available ?
+                GraphEditorCommandUnavailableReason::None :
+                GraphEditorCommandUnavailableReason::NoSelection;
+            return status;
+        case GraphEditorCommandId::ClearHover:
+            status.available = availability.clear_hover;
+            status.unavailable_reason = status.available ?
+                GraphEditorCommandUnavailableReason::None :
+                GraphEditorCommandUnavailableReason::NoHover;
+            return status;
+        case GraphEditorCommandId::CancelPendingLink:
+            status.available = availability.cancel_pending_link;
+            status.unavailable_reason = status.available ?
+                GraphEditorCommandUnavailableReason::None :
+                GraphEditorCommandUnavailableReason::NoActivePendingLink;
+            return status;
+        }
+
+        status.available = false;
+        status.unavailable_reason = GraphEditorCommandUnavailableReason::InvalidCommand;
+        return status;
+    }
+
+    inline GraphEditorCommandStatus graph_editor_command_status(
+        const GraphEditorState& editor_state,
+        GraphEditorCommandId command)
+    {
+        return graph_editor_command_status(
+            graph_editor_command_availability(editor_state),
+            command);
+    }
+
     inline bool graph_editor_command_available(
         const GraphEditorCommandAvailability& availability,
         GraphEditorCommandId command)
     {
-        switch (command) {
-        case GraphEditorCommandId::ClearSelection:
-            return availability.clear_selection;
-        case GraphEditorCommandId::ClearHover:
-            return availability.clear_hover;
-        case GraphEditorCommandId::CancelPendingLink:
-            return availability.cancel_pending_link;
-        }
-
-        return false;
+        return graph_editor_command_status(availability, command).available;
     }
 
     inline bool graph_editor_command_available(
         const GraphEditorState& editor_state,
         GraphEditorCommandId command)
     {
-        return graph_editor_command_available(
-            graph_editor_command_availability(editor_state),
-            command);
+        return graph_editor_command_status(editor_state, command).available;
     }
 
     inline GraphEditorStateCommandResult select_graph_editor_node(
