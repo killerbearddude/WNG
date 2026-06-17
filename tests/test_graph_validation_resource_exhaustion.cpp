@@ -94,10 +94,13 @@ namespace
 
     class ThrowingValidationCallback final : public wng::GraphValidationCallback {
     public:
+        mutable unsigned calls = 0;
+
         wng::Result validate_graph(
             const wng::Graph&,
             wng::ValidationReport&) const override
         {
+            ++calls;
             throw std::bad_alloc();
         }
     };
@@ -130,6 +133,7 @@ int main()
 
         const wng::ValidationReport report = wng::validate_graph(graph, options);
 
+        assert(callback.calls == 1U);
         assert(!report.valid());
         assert(report.issues.size() == 1U);
         assert(report.issues[0].code == wng::ValidationIssueCode::ResourceExhausted);
@@ -137,6 +141,43 @@ int main()
         assert(report.issues[0].node == wng::NodeId {});
         assert(report.issues[0].port == wng::PortId {});
         assert(report.issues[0].link == wng::LinkId {});
+    }
+
+    {
+        // Host resource exhaustion is appended after earlier graph diagnostics
+        // instead of replacing them. This preserves deterministic issue layering
+        // for callers that need both core diagnostics and callback failure state.
+        wng::Graph graph;
+        const wng::NodeId source = add_node(graph);
+        const wng::NodeId target = add_node(graph);
+        const wng::PortId source_in = add_port(graph, source, wng::PortKind::Input, "in");
+        const wng::PortId source_out = add_port(graph, source, wng::PortKind::Output, "out");
+        const wng::PortId target_in = add_port(graph, target, wng::PortKind::Input, "in");
+        const wng::PortId target_out = add_port(graph, target, wng::PortKind::Output, "out");
+
+        wng::LinkId link;
+        assert(graph.create_link(source_out, target_in, &link) == wng::Result::Ok);
+        assert(graph.create_link(target_out, source_in, &link) == wng::Result::Ok);
+
+        ThrowingValidationCallback callback;
+        wng::GraphValidationOptions options;
+        options.cycle_mode = wng::GraphCycleMode::RequireAcyclic;
+        options.callback = &callback;
+
+        const wng::ValidationReport report = wng::validate_graph(graph, options);
+
+        assert(callback.calls == 1U);
+        assert(!report.valid());
+        assert(report.issues.size() == 3U);
+        assert(report.issues[0].code == wng::ValidationIssueCode::CycleDetected);
+        assert(report.issues[0].node == source);
+        assert(report.issues[1].code == wng::ValidationIssueCode::CycleDetected);
+        assert(report.issues[1].node == target);
+        assert(report.issues[2].code == wng::ValidationIssueCode::ResourceExhausted);
+        assert(report.issues[2].result == resource_exhausted_result());
+        assert(report.issues[2].node == wng::NodeId {});
+        assert(report.issues[2].port == wng::PortId {});
+        assert(report.issues[2].link == wng::LinkId {});
     }
 
     {
