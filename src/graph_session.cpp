@@ -6,9 +6,24 @@
 
 #include <wng/execution_plan.hpp>
 #include <wng/graph_command.hpp>
+#include <wng/graph_command_transaction.hpp>
 #include <wng/graph_history.hpp>
 #include <wng/graph_validation.hpp>
 #include <wng/serialization.hpp>
+
+namespace
+{
+    bool transaction_has_successful_command(const wng::GraphCommandTransaction& transaction)
+    {
+        for (const wng::GraphCommandRecord& record : transaction.batch().records) {
+            if (record.result == wng::Result::Ok) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
 
 namespace wng
 {
@@ -159,6 +174,33 @@ namespace wng
     GraphSessionCommandResult GraphSession::destroy_link(LinkId link)
     {
         return record_executed_command(wng::command_destroy_link(graph_, link));
+    }
+
+    GraphTransactionResult GraphSession::commit_transaction(
+        const GraphCommandTransaction& transaction)
+    {
+        const bool graph_already_changed = transaction_has_successful_command(transaction);
+        const GraphTransactionResult result = wng::commit_transaction(history_, transaction);
+
+        // Transactions contain command results from mutations that already ran
+        // against this session graph. The revision must reflect those graph
+        // effects even if the history commit is rejected or allocation fails.
+        if (graph_already_changed) {
+            mark_modified();
+        }
+
+        return result;
+    }
+
+    GraphTransactionResult GraphSession::rollback_transaction(
+        const GraphCommandTransaction& transaction)
+    {
+        const bool rollback_can_change_graph = transaction_has_successful_command(transaction);
+        const GraphTransactionResult result = wng::rollback_transaction(graph_, transaction);
+        if (result.success() && rollback_can_change_graph) {
+            mark_modified();
+        }
+        return result;
     }
 
     Result GraphSession::record_graph_command(const GraphCommandRecord& record)
