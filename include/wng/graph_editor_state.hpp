@@ -54,7 +54,14 @@ namespace wng
         bool cancel_pending_link = false;
         bool complete_pending_link = false;
 
-        bool any_available() const;
+        bool any_available() const
+        {
+            return clear_selection ||
+                delete_selection ||
+                clear_hover ||
+                cancel_pending_link ||
+                complete_pending_link;
+        }
     };
 
     // Captures a non-rendering pending link interaction. WNG core stores only
@@ -126,6 +133,15 @@ namespace wng
     GraphEditorElement graph_editor_single_selected_element(
         const GraphEditorState& editor_state);
 
-    GraphEditorCommandAvailability graph_editor_command_availability(
-        const GraphEditorState& editor_state);
+    inline GraphEditorCommandAvailability graph_editor_command_availability(
+        const GraphEditorState& editor_state)
+    {
+        GraphEditorCommandAvailability availability;
+        availability.clear_selection = graph_editor_has_selection(editor_state);
+        availability.delete_selection = availability.clear_selection;
+        availability.clear_hover = graph_editor_has_hover(editor_state);
+        availability.cancel_pending_link = graph_editor_has_active_pending_link(editor_state);
+        availability.complete_pending_link = graph_editor_can_complete_pending_link(editor_state);
+        return availability;
+    }
 }
