@@ -20,6 +20,7 @@ add_library(wng_core
     src/graph_redo.cpp
     src/graph_command_history.cpp
     src/graph_history.cpp
+    src/graph_session.cpp
     src/graph_command_transaction.cpp
     src/graph_diff.cpp
     src/graph_mutation_preview.cpp
