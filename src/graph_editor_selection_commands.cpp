@@ -6,6 +6,7 @@
 #include <wng/graph_editor_selection_commands.hpp>
 
 #include <algorithm>
+#include <cstdint>
 #include <new>
 #include <vector>
 
@@ -107,10 +108,10 @@ namespace
                 wng::command_destroy_link(session.graph(), link);
             if (command.success()) {
                 wng::apply_editor_state_cleanup(editor_state, command);
+                ++result.deleted_links;
                 if (!append_successful_command(result, session, command)) {
                     return;
                 }
-                ++result.deleted_links;
                 continue;
             }
 
@@ -139,10 +140,10 @@ namespace
                 wng::command_remove_port(session.graph(), port);
             if (command.success()) {
                 wng::apply_editor_state_cleanup(editor_state, command);
+                ++result.deleted_ports;
                 if (!append_successful_command(result, session, command)) {
                     return;
                 }
-                ++result.deleted_ports;
                 continue;
             }
 
@@ -171,10 +172,10 @@ namespace
                 wng::command_destroy_node(session.graph(), node);
             if (command.success()) {
                 wng::apply_editor_state_cleanup(editor_state, command);
+                ++result.deleted_nodes;
                 if (!append_successful_command(result, session, command)) {
                     return;
                 }
-                ++result.deleted_nodes;
                 continue;
             }
 
