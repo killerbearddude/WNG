@@ -49,7 +49,7 @@ namespace wng
     // not execute commands, mutate graphs, inspect schema, or own UI behavior.
     struct GraphEditorCommandAvailability {
         bool clear_selection = false;
-        bool delete_selection = false;
+        bool remove_selection = false;
         bool clear_hover = false;
         bool cancel_pending_link = false;
         bool complete_pending_link = false;
@@ -57,7 +57,7 @@ namespace wng
         bool any_available() const
         {
             return clear_selection ||
-                delete_selection ||
+                remove_selection ||
                 clear_hover ||
                 cancel_pending_link ||
                 complete_pending_link;
@@ -138,7 +138,7 @@ namespace wng
     {
         GraphEditorCommandAvailability availability;
         availability.clear_selection = graph_editor_has_selection(editor_state);
-        availability.delete_selection = availability.clear_selection;
+        availability.remove_selection = availability.clear_selection;
         availability.clear_hover = graph_editor_has_hover(editor_state);
         availability.cancel_pending_link = graph_editor_has_active_pending_link(editor_state);
         availability.complete_pending_link = graph_editor_can_complete_pending_link(editor_state);
