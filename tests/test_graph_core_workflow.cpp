@@ -227,11 +227,8 @@ namespace
         assert(plan.result == wng::Result::Ok);
         assert(plan.success());
         assert(plan.complete());
+        assert(plan.source_nodes.empty());
         assert(plan.unresolved_nodes.empty());
-        assert_nodes(plan.source_nodes, std::vector<wng::NodeId> {
-            ids.source_a.id,
-            ids.source_b.id
-        });
         assert_nodes(plan.planned_nodes, std::vector<wng::NodeId> {
             ids.source_a.id,
             ids.source_b.id,
