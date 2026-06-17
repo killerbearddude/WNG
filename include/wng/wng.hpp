@@ -7,6 +7,7 @@
 #include <wng/graph_editor_state.hpp>
 #include <wng/graph_editor_state_cleanup.hpp>
 #include <wng/graph_editor_selection_commands.hpp>
+#include <wng/graph_hit_testing.hpp>
 #include <wng/graph_command_transaction.hpp>
 #include <wng/graph_diff.hpp>
 #include <wng/graph_restore.hpp>
