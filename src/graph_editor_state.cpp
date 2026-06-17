@@ -64,6 +64,21 @@ namespace wng
         return false;
     }
 
+    std::size_t GraphEditorSelectionSummary::total_count() const
+    {
+        return node_count + port_count + link_count;
+    }
+
+    bool GraphEditorSelectionSummary::empty() const
+    {
+        return total_count() == 0U;
+    }
+
+    bool GraphEditorSelectionSummary::single() const
+    {
+        return total_count() == 1U;
+    }
+
     const std::vector<NodeId>& GraphEditorState::selected_nodes() const
     {
         return selected_nodes_;
@@ -275,5 +290,70 @@ namespace wng
              contains_id(summary.removed_ports, pending_link_.candidate_to))) {
             clear_pending_link();
         }
+    }
+
+    GraphEditorSelectionSummary graph_editor_selection_summary(
+        const GraphEditorState& editor_state)
+    {
+        GraphEditorSelectionSummary summary;
+        summary.node_count = editor_state.selected_nodes().size();
+        summary.port_count = editor_state.selected_ports().size();
+        summary.link_count = editor_state.selected_links().size();
+        return summary;
+    }
+
+    bool graph_editor_has_selection(const GraphEditorState& editor_state)
+    {
+        return !graph_editor_selection_summary(editor_state).empty();
+    }
+
+    bool graph_editor_has_hover(const GraphEditorState& editor_state)
+    {
+        return editor_state.hovered().valid();
+    }
+
+    bool graph_editor_has_active_pending_link(const GraphEditorState& editor_state)
+    {
+        const GraphEditorPendingLink pending_link = editor_state.pending_link();
+        return pending_link.active && valid(pending_link.from);
+    }
+
+    bool graph_editor_has_pending_link_candidate(const GraphEditorState& editor_state)
+    {
+        const GraphEditorPendingLink pending_link = editor_state.pending_link();
+        return pending_link.active && valid(pending_link.candidate_to);
+    }
+
+    bool graph_editor_can_complete_pending_link(const GraphEditorState& editor_state)
+    {
+        const GraphEditorPendingLink pending_link = editor_state.pending_link();
+        return pending_link.active &&
+            valid(pending_link.from) &&
+            valid(pending_link.candidate_to) &&
+            pending_link.from != pending_link.candidate_to;
+    }
+
+    GraphEditorElement graph_editor_single_selected_element(
+        const GraphEditorState& editor_state)
+    {
+        if (!graph_editor_selection_summary(editor_state).single()) {
+            return GraphEditorElement {};
+        }
+
+        GraphEditorElement element;
+        if (!editor_state.selected_nodes().empty()) {
+            element.kind = GraphEditorElementKind::Node;
+            element.node = editor_state.selected_nodes()[0];
+            return element;
+        }
+        if (!editor_state.selected_ports().empty()) {
+            element.kind = GraphEditorElementKind::Port;
+            element.port = editor_state.selected_ports()[0];
+            return element;
+        }
+
+        element.kind = GraphEditorElementKind::Link;
+        element.link = editor_state.selected_links()[0];
+        return element;
     }
 }

@@ -288,6 +288,83 @@ namespace
             assert(a.links[i].enabled == b.links[i].enabled);
         }
     }
+
+    void assert_editor_state_query_helpers()
+    {
+        wng::GraphEditorState editor_state;
+        wng::GraphEditorSelectionSummary summary =
+            wng::graph_editor_selection_summary(editor_state);
+
+        assert(summary.node_count == 0U);
+        assert(summary.port_count == 0U);
+        assert(summary.link_count == 0U);
+        assert(summary.total_count() == 0U);
+        assert(summary.empty());
+        assert(!summary.single());
+        assert(!wng::graph_editor_has_selection(editor_state));
+        assert(!wng::graph_editor_single_selected_element(editor_state).valid());
+        assert(!wng::graph_editor_has_hover(editor_state));
+        assert(!wng::graph_editor_has_active_pending_link(editor_state));
+        assert(!wng::graph_editor_has_pending_link_candidate(editor_state));
+        assert(!wng::graph_editor_can_complete_pending_link(editor_state));
+
+        const wng::NodeId node { 11U };
+        const wng::PortId source_port { 21U };
+        const wng::PortId target_port { 22U };
+        const wng::LinkId link { 31U };
+
+        assert(editor_state.select_node(node) == wng::Result::Ok);
+        summary = wng::graph_editor_selection_summary(editor_state);
+        assert(summary.node_count == 1U);
+        assert(summary.port_count == 0U);
+        assert(summary.link_count == 0U);
+        assert(summary.total_count() == 1U);
+        assert(!summary.empty());
+        assert(summary.single());
+        assert(wng::graph_editor_has_selection(editor_state));
+        wng::GraphEditorElement selected = wng::graph_editor_single_selected_element(editor_state);
+        assert(selected.kind == wng::GraphEditorElementKind::Node);
+        assert(selected.node == node);
+        assert(selected.valid());
+
+        assert(editor_state.select_port(source_port) == wng::Result::Ok);
+        summary = wng::graph_editor_selection_summary(editor_state);
+        assert(summary.node_count == 1U);
+        assert(summary.port_count == 1U);
+        assert(summary.total_count() == 2U);
+        assert(!summary.single());
+        assert(!wng::graph_editor_single_selected_element(editor_state).valid());
+
+        editor_state.clear_selection();
+        assert(editor_state.select_link(link) == wng::Result::Ok);
+        selected = wng::graph_editor_single_selected_element(editor_state);
+        assert(selected.kind == wng::GraphEditorElementKind::Link);
+        assert(selected.link == link);
+        assert(selected.valid());
+
+        assert(editor_state.set_hovered_port(target_port) == wng::Result::Ok);
+        assert(wng::graph_editor_has_hover(editor_state));
+        editor_state.clear_hovered();
+        assert(!wng::graph_editor_has_hover(editor_state));
+
+        assert(editor_state.begin_pending_link(source_port) == wng::Result::Ok);
+        assert(wng::graph_editor_has_active_pending_link(editor_state));
+        assert(!wng::graph_editor_has_pending_link_candidate(editor_state));
+        assert(!wng::graph_editor_can_complete_pending_link(editor_state));
+
+        assert(editor_state.set_pending_link_target(source_port) == wng::Result::Ok);
+        assert(wng::graph_editor_has_pending_link_candidate(editor_state));
+        assert(!wng::graph_editor_can_complete_pending_link(editor_state));
+
+        assert(editor_state.set_pending_link_target(target_port) == wng::Result::Ok);
+        assert(wng::graph_editor_has_pending_link_candidate(editor_state));
+        assert(wng::graph_editor_can_complete_pending_link(editor_state));
+
+        editor_state.clear_pending_link();
+        assert(!wng::graph_editor_has_active_pending_link(editor_state));
+        assert(!wng::graph_editor_has_pending_link_candidate(editor_state));
+        assert(!wng::graph_editor_can_complete_pending_link(editor_state));
+    }
 }
 
 int main()
@@ -317,6 +394,8 @@ int main()
     const wng::GraphDiff diff = wng::diff_graphs(workflow.graph, imported);
     assert(diff.success());
     assert(diff.empty());
+
+    assert_editor_state_query_helpers();
 
     return 0;
 }
