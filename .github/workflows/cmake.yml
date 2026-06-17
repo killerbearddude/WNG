@@ -17,6 +17,8 @@ jobs:
         build_type:
           - Debug
           - Release
+          - RelWithDebInfo
+          - MinSizeRel
 
     steps:
       - name: Check out repository
