@@ -1,208 +1,320 @@
-# WNG Graph Core Roadmap
+# WNG Product Roadmap
 
-This roadmap exists to prevent architectural drift.
+This roadmap is the active plan for moving WNG from its current graph-core
+foundation to a user-facing product. It supersedes the earlier diagnostics-first
+working direction.
 
-WNG is a standalone graph-engine core. It should remain deterministic, testable,
-extensible, serialization-friendly, and suitable for future node graph tools
-without becoming the editor, renderer, runtime, platform layer, or application.
+WNG remains a standalone C++17 graph-engine layer. It must stay deterministic,
+testable, extensible, serialization-friendly, and suitable for future node graph
+tools without becoming the platform layer, renderer backend, application, game
+logic, or domain-specific node library.
 
-This document is not a date schedule. It is a phase gate and scope filter for
-future patches.
+## Product objective
 
-## Primary objective
+Build WNG into an embeddable graph product that lets a consumer:
 
-Build and maintain a clean C++ graph core for node graphs, dataflow graphs,
-dependency graphs, editor tooling foundations, visual scripting foundations,
-procedural systems, and future canvas-based graph tools.
+1. define graph schemas;
+2. create and mutate graphs through stable APIs;
+3. validate graph state;
+4. inspect deterministic traversal and execution-planning metadata;
+5. serialize through format-neutral DTO boundaries;
+6. migrate graph data across schema versions;
+7. undo and redo graph-level operations;
+8. host a future graph editor and WPL renderer without leaking UI/platform code
+   into `wng_core`.
 
-The core owns graph model behavior, validation, traversal, dependency analysis,
-execution planning metadata, serialization boundaries, command records,
-transaction/history integration points, and extension mechanisms.
+A user-facing WNG product is not just a collection of primitives. It needs a
+cohesive session/document boundary, editor-facing state, graph-space hit testing,
+rendering integration, and eventually runtime/evaluation seams.
 
-The core does not own domain behavior, editor presentation, rendering, platform
-integration, runtime evaluation, or application-specific node libraries.
+## Current baseline
 
-## Hard non-goals
+The following foundations are considered implemented enough to stop treating
+them as the main development track:
 
-Do not add these to WNG graph core unless this roadmap is deliberately revised:
+- graph-core model: IDs, nodes, ports, links, graph mutation, mutation summaries;
+- in-memory DTO import/export and graph snapshots;
+- schema definitions and schema-aware mutation helpers;
+- whole-graph validation and schema validation;
+- deterministic traversal, dependency analysis, dirty propagation, and execution
+  planning metadata;
+- graph command records, command transactions, command history, and mixed
+  graph-level history;
+- graph/schema diffing, schema compatibility, schema migration planning,
+  migration policy, migration application, and migration history.
 
-- visual node editor UI;
-- canvas rendering;
-- GUI widgets;
-- layout engine;
-- hit testing and selection UI;
-- WPL integration code;
+These areas still require bug fixes and integration hardening when defects are
+found, but they should no longer dominate the roadmap.
+
+## Development pivot
+
+The project is moving out of the diagnostics/test-hardening loop.
+
+Supporting tests and diagnostics remain required for new public behavior, but
+they are not the product objective. Future PRs should normally add product
+capability first and include only the tests required to prove that capability.
+
+Test-only, diagnostics-only, or one-line cleanup PRs should be avoided unless
+one of these is true:
+
+- the issue blocks the next product milestone;
+- the issue is a confirmed regression;
+- the issue protects a public API boundary that the next milestone will depend
+  on;
+- the project owner explicitly requests the cleanup.
+
+## Hard boundaries
+
+WNG core must not absorb unrelated layers.
+
+Do not add these to `wng_core`:
+
+- visual node editor widgets;
+- canvas rendering implementation;
+- WPL headers or WPL include paths;
 - platform/windowing code;
-- GPU or renderer abstractions;
-- engine-specific bindings;
-- game logic;
-- application-specific node behavior;
+- X11, XKB, raw input, or frame lifecycle code;
+- GPU or renderer backends;
+- game/application-specific node behavior;
 - scripting language runtime;
-- threaded/asynchronous scheduler;
-- file format ownership beyond DTO boundaries;
-- database, networking, asset pipeline, or package management.
+- database, networking, or asset pipeline code;
+- file format ownership beyond DTO boundaries until a persistence milestone
+  explicitly decides otherwise.
 
-A future editor, runtime, or WPL integration may consume WNG, but WNG must not
-absorb those layers.
+Future editor, runtime, and WPL integration layers may consume `wng_core`, but
+`wng_core` must remain domain-neutral.
 
 ## Architectural invariants
 
-All future patches should preserve these invariants:
+All future product work must preserve these invariants:
 
 - persistent identity uses stable IDs, not raw pointers;
-- public APIs remain explicit and Result-based;
+- public APIs remain explicit and `Result`-based;
 - graph mutation summaries remain deterministic;
 - validation happens before traversal or planning that depends on validity;
 - traversal and planning results are deterministic;
 - cycle behavior is explicit and opt-in where required;
 - serialization boundaries use DTOs or snapshots, not runtime pointers;
-- host extension points are opt-in and do not weaken core safety;
-- callbacks do not transfer ownership to graph core;
+- host extension points are opt-in and do not transfer ownership to graph core;
 - core layers do not include editor, renderer, platform, or WPL headers;
-- tests cover every new public API and every new graph invariant.
+- product-facing APIs are cohesive enough that consumers do not need to manually
+  stitch together every low-level subsystem.
 
-## Phase gates
+## Roadmap to user-facing product
 
-### Phase 0: Graph-core baseline
+### Phase 1: Product-facing graph session
 
-Status: implemented.
+Status: next active milestone.
 
-The baseline includes IDs, graph-owned nodes, ports, links, built-in connection
-validation, deterministic mutation summaries, and C++17 test coverage.
+Goal: add a coherent in-memory boundary that represents one usable graph working
+state.
 
-Allowed work in this phase now is limited to bug fixes, invariant hardening, and
-small documentation corrections.
+Proposed concept names:
 
-### Phase 1: Serialization boundary
+- `GraphSession`; or
+- `GraphDocument`.
 
-Status: implemented for in-memory DTO import/export.
+The name should be chosen before implementation. `GraphSession` is preferred if
+it owns runtime working state but not persistence. `GraphDocument` is preferred
+if it becomes the editor/persistence-facing model.
 
-The graph core may define DTOs, snapshots, versioned in-memory structures, and
-migration-ready data boundaries. It must not claim ownership of JSON, binary,
-asset files, or WPL file I/O until a separate persistence boundary is designed.
+Initial scope:
 
-### Phase 2: Schema foundation
+- own or aggregate `Graph`, `GraphSchema`, and `GraphHistory`;
+- expose current graph/schema accessors;
+- track revision and dirty state;
+- provide session-level validation;
+- provide session-level execution planning;
+- provide command recording, undo, and redo routing;
+- provide graph snapshot/export/import handoff points;
+- remain in-memory and format-neutral;
+- avoid editor UI, WPL, rendering, and runtime evaluation.
 
-Status: implemented.
+This phase turns existing primitives into a product-shaped API.
 
-Schema work may include node definitions, port definitions, schema-aware helpers,
-connection validation, graph validation, and host schema validation callbacks.
+### Phase 2: Editor model core without WPL
 
-Schema work must remain domain-neutral. New node libraries or gameplay/tool
-semantics belong outside the graph core.
+Status: planned after graph session.
 
-### Phase 3: Validation and diagnostics
+Goal: define graph-editor state without platform or rendering dependencies.
 
-Status: active hardening.
+Scope:
 
-Validation is the preferred next area for narrow, high-value patches. Good work
-includes stronger whole-graph consistency checks, option plumbing, deterministic
-issue ordering, callback integration, and allocation-failure handling.
+- selected nodes, ports, and links;
+- hovered graph item;
+- active interaction mode as data, not UI behavior;
+- pending link creation state;
+- editor cleanup after graph mutation summaries;
+- editor-safe command grouping through graph/session history.
 
-Validation patches must not mutate graphs or schemas.
+Non-goals:
 
-### Phase 4: Traversal, dependency analysis, and planning
+- no widgets;
+- no WPL dependency;
+- no screen-to-canvas conversion;
+- no rendering;
+- no OS input handling.
 
-Status: implemented for deterministic non-executing analysis.
+### Phase 3: Graph-space hit testing
 
-Traversal, topological ordering, dirty propagation, and execution planning may
-produce ordered metadata. They must not evaluate nodes, store runtime values, or
-own scheduler state.
+Status: planned after editor model core.
 
-Stored dirty flags and runtime execution state are deferred until ownership and
-lifetime rules are designed.
+Goal: let editor/integration layers identify graph elements from canonical
+graph-space coordinates.
 
-### Phase 5: Command, transaction, and history foundations
+Scope:
 
-Status: implemented for command records, undo/redo primitives, command history,
-transactions, schema migration command history, and mixed graph-level history.
+- node body hit testing;
+- port hit testing;
+- link hit testing using graph-space geometry;
+- deterministic hit priority;
+- configurable hit radii and geometry policy;
+- no screen/canvas transform ownership.
 
-Future work may harden transaction boundaries and command-record consistency.
+WPL remains responsible for screen-to-canvas and canvas-to-screen conversion.
 
-Editor transaction managers, selection history, editor state history, and
-automatic command recording remain outside the graph core until an integration
-boundary is explicitly designed.
+### Phase 4: Static WPL rendering adapter
 
-### Phase 6: Diff, snapshot, compatibility, and migration foundations
+Status: planned after graph-space editor state and hit testing.
 
-Status: implemented for deterministic graph/schema diffs, graph/schema snapshots,
-schema compatibility, migration planning, migration policy, migration apply
-preview, migration command preview, migration apply, and migration history.
+Goal: render a static graph through WPL draw commands without moving rendering
+ownership into `wng_core`.
 
-Future work should prefer read-only diagnostics and deterministic policy plumbing
-before adding mutation-generation semantics.
+Likely target:
 
-Graph command generation for schema migration is deferred until there is a clear
-decision whether migrations should become ordinary graph command records,
-snapshot-backed graph-level records, or a separate command family.
+- `wng_render_wpl` depends on `wng_core`, the editor/model layer if needed, and
+  WPL;
+- render nodes, ports, labels, links, selection, hover, and validation overlays;
+- use straight-line link fallback until WPL exposes richer primitives;
+- keep all WPL headers out of `wng_core`.
 
-### Phase 7: Runtime execution boundary
+This phase creates the first visual user-facing product surface.
+
+### Phase 5: Interactive graph editing
+
+Status: planned after static rendering.
+
+Goal: support real user operations through editor/session APIs.
+
+Scope:
+
+- select and deselect graph objects;
+- move selected nodes in graph space;
+- start, update, cancel, and complete link creation;
+- delete selected graph objects;
+- group user operations into undoable commands;
+- integrate mutation summaries with editor-state cleanup.
+
+Non-goals:
+
+- no application-specific menus or inspectors;
+- no custom node libraries;
+- no platform input ownership inside WNG core.
+
+### Phase 6: Product example application
+
+Status: planned after interactive editing.
+
+Goal: provide a minimal application that proves WNG can be embedded as a
+user-facing graph tool.
+
+Scope:
+
+- create a window through WPL;
+- render a graph;
+- select and drag nodes;
+- create links;
+- validate graph state;
+- undo and redo graph operations;
+- save/load only if a persistence boundary has been explicitly chosen.
+
+This example is not the engine core. It is the proof that the engine core and
+integration layers are usable.
+
+### Phase 7: Runtime/evaluation boundary
+
+Status: deferred until the editor/product shell is usable.
+
+Goal: decide whether WNG should execute graphs or only prepare deterministic
+execution metadata.
+
+Possible scope:
+
+- evaluator registration interface;
+- typed value boundary or opaque host value handles;
+- execution context lifetime rules;
+- plan execution using existing `ExecutionPlan` metadata;
+- deterministic failure reporting;
+- no threaded/asynchronous scheduler until explicitly designed.
+
+This phase must not introduce domain-specific node behavior into graph core.
+
+### Phase 8: Persistence/file-format decision
 
 Status: deferred.
 
-Evaluator callbacks, runtime node evaluation, stored execution state, and
-threaded/asynchronous scheduling are not graph-core priorities yet.
+Goal: decide whether WNG owns a file format or remains DTO-only.
 
-Execution planning may continue to prepare deterministic metadata, but actual
-runtime behavior should wait for a dedicated execution boundary design.
+Options:
 
-### Phase 8: Editor and WPL integration boundary
+1. WNG remains DTO-only and applications own JSON/binary formats.
+2. WNG provides a reference text/binary format outside `wng_core`.
+3. WNG provides adapters but leaves storage policy to the host.
 
-Status: deferred.
+Until this decision is made, file I/O remains out of core.
 
-WNG may expose APIs that are useful to editors, but must not add editor UI,
-selection systems, WPL dependencies, layout, hit testing, rendering, or platform
-code directly to graph core.
+## Near-term PR queue
 
-Any future WPL/editor integration should live in a separate integration layer.
+The next development PRs should be product-progress PRs, in this order unless a
+blocking defect appears:
 
-## Preferred near-term patches
+1. `GraphSession` or `GraphDocument` foundation.
+2. Session-level command/history integration.
+3. Session-level validation and execution-planning convenience APIs.
+4. Editor model core: selection, hover, pending link state.
+5. Mutation-summary driven editor-state cleanup.
+6. Graph-space hit testing.
+7. Static WPL renderer adapter design and first implementation.
+8. Interactive selection and node dragging.
+9. Interactive link creation.
+10. Minimal product example application.
 
-Prefer patches in this order when choosing the next viable change:
+## PR sizing policy
 
-1. validation consistency and callback plumbing;
-2. deterministic diagnostics and issue ordering;
-3. allocation-failure hardening for public Result-based APIs;
-4. small command/history invariant improvements;
-5. snapshot/diff/migration diagnostic hardening;
-6. documentation that prevents scope drift.
+Prefer medium, coherent product slices over micro-PRs.
 
-Avoid jumping to runtime execution, editor state, WPL integration, file formats,
-or domain-specific node behavior while graph-core seams are still being hardened.
+A good product PR should generally:
 
-## Patch acceptance rules
+- add or complete one user-visible capability;
+- touch the subsystem files needed for that capability;
+- include supporting tests only where they prove the new behavior;
+- update docs when the public workflow changes;
+- avoid mixing unrelated product milestones.
 
-A patch is a good fit when it satisfies most of these conditions:
+Avoid PRs that only rename, polish, or harden internals unless they unblock the
+current product milestone.
 
-- it has one clear architectural purpose;
-- it is graph-core only;
-- it preserves existing public behavior unless explicitly changing it;
-- it has deterministic ordering rules;
-- it has tests for success, failure, and boundary cases;
-- it catches allocation failures where existing public APIs already promise
-  Result-style failure reporting;
-- it improves extension seams without giving host code ownership of core state;
-- it does not require editor, renderer, WPL, platform, or domain-specific code.
+## Definition of user-facing product
 
-A patch should be rejected or split when it:
+WNG reaches its first user-facing product target when a consumer can:
 
-- combines model, UI, runtime, and persistence concerns;
-- introduces global mutable registries without clear ownership;
-- uses raw pointers as persistent identity;
-- weakens validation or permits schemas/callbacks to bypass core safety;
-- makes traversal or planning nondeterministic;
-- stores runtime-only data in serialization DTOs;
-- adds editor or WPL dependencies to graph core;
-- implements domain-specific node behavior before the core boundary is stable.
+1. define a schema;
+2. create a graph through the session/editor-facing API;
+3. render the graph through WPL integration;
+4. select, move, connect, and delete graph objects;
+5. validate graph state and surface validation feedback;
+6. undo and redo user graph operations;
+7. import/export through an agreed boundary;
+8. extend node/schema behavior without modifying graph-core internals.
+
+This target does not require game logic, a scripting runtime, a full asset
+pipeline, or a finished visual design system.
 
 ## Current best next direction
 
-The best immediate development direction remains validation consistency and
-deterministic diagnostics hardening.
+The best immediate development direction is `GraphSession` / `GraphDocument`.
 
-Prefer small patches that strengthen issue ordering, option composition,
-allocation-failure handling, and callback safety without mutating graphs or
-schemas.
-
-Avoid moving into runtime evaluation, editor state, WPL integration, or file
-format ownership until the remaining graph-core validation seams are stable.
+The next code PR should establish the product-facing in-memory working-state
+boundary that future editor, WPL rendering, and runtime layers will consume.
+Validation, diagnostics, and tests should support that work rather than replace
+it.
