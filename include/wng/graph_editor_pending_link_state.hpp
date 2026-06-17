@@ -24,6 +24,16 @@ namespace wng
         }
     };
 
+    struct GraphEditorPendingLinkCompleteResult {
+        GraphSessionCommandResult session;
+        GraphEditorPendingLink pending_link;
+
+        bool success() const
+        {
+            return session.success();
+        }
+    };
+
     inline bool graph_editor_pending_link_valid_port(PortId port)
     {
         return port.value != 0;
@@ -87,6 +97,33 @@ namespace wng
         update.hit = hit;
         update.pending_link = editor_state.pending_link();
         return update;
+    }
+
+    // Completes the active pending-link state through GraphSession's schema-aware
+    // link command. Pending state is cleared after graph mutation succeeds; the
+    // returned session result still reports history-recording failures separately.
+    inline GraphEditorPendingLinkCompleteResult complete_graph_editor_pending_link(
+        GraphSession& session,
+        GraphEditorState& editor_state)
+    {
+        GraphEditorPendingLinkCompleteResult result;
+        result.pending_link = editor_state.pending_link();
+        if (!result.pending_link.active ||
+            !graph_editor_pending_link_valid_port(result.pending_link.from) ||
+            !graph_editor_pending_link_valid_port(result.pending_link.candidate_to)) {
+            result.session.command.result = Result::InvalidArgument;
+            result.session.command.record.kind = GraphCommandKind::SchemaCreateLink;
+            result.session.command.record.result = Result::InvalidArgument;
+            return result;
+        }
+
+        result.session = session.create_schema_link(
+            result.pending_link.from,
+            result.pending_link.candidate_to);
+        if (result.session.command.success()) {
+            editor_state.clear_pending_link();
+        }
+        return result;
     }
 
     inline GraphEditorPendingLinkHitTestUpdateResult begin_graph_editor_pending_link_from_hit_test(
