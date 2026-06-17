@@ -21,6 +21,7 @@ add_library(wng_core
     src/graph_command_history.cpp
     src/graph_history.cpp
     src/graph_session.cpp
+    src/graph_editor_state.cpp
     src/graph_command_transaction.cpp
     src/graph_diff.cpp
     src/graph_mutation_preview.cpp
@@ -188,6 +189,8 @@ wng_add_header_compile_test(test_header_graph_undo wng/graph_undo.hpp)
 wng_add_header_compile_test(test_header_graph_redo wng/graph_redo.hpp)
 wng_add_header_compile_test(test_header_graph_command_history wng/graph_command_history.hpp)
 wng_add_header_compile_test(test_header_graph_history wng/graph_history.hpp)
+wng_add_header_compile_test(test_header_graph_session wng/graph_session.hpp)
+wng_add_header_compile_test(test_header_graph_editor_state wng/graph_editor_state.hpp)
 wng_add_header_compile_test(test_header_graph_command_transaction wng/graph_command_transaction.hpp)
 wng_add_header_compile_test(test_header_graph_diff wng/graph_diff.hpp)
 wng_add_header_compile_test(test_header_graph_mutation_preview wng/graph_mutation_preview.hpp)
