@@ -56,12 +56,13 @@ enable_testing()
 
 function(wng_keep_assertions_enabled name)
     # WNG tests intentionally use assert() for checks and fixture setup.
-    # Keep those assertions active in Release test binaries so Release CTest
-    # validates the same test semantics as Debug without changing wng_core flags.
+    # Keep those assertions active in every test binary configuration so
+    # release-like builds validate the same test semantics as Debug without
+    # changing wng_core flags.
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        target_compile_options(${name} PRIVATE $<$<CONFIG:Release>:-UNDEBUG>)
+        target_compile_options(${name} PRIVATE -UNDEBUG)
     elseif (MSVC)
-        target_compile_options(${name} PRIVATE $<$<CONFIG:Release>:/UNDEBUG>)
+        target_compile_options(${name} PRIVATE /UNDEBUG)
     endif()
 endfunction()
 
@@ -81,6 +82,7 @@ function(wng_add_test name source)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
+wng_add_test(test_assertions_enabled tests/test_assertions_enabled.cpp)
 wng_add_test(test_ids tests/test_ids.cpp)
 wng_add_test(test_graph_nodes tests/test_graph_nodes.cpp)
 wng_add_test(test_graph_ports tests/test_graph_ports.cpp)
