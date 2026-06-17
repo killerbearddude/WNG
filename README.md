@@ -47,6 +47,8 @@ Current graph session status:
 - session-level execution planning: implemented
 - DTO export/import handoff: implemented
 - undo/redo routing through mixed graph history: implemented
+- session-routed graph command execution: implemented
+- automatic session history recording for graph commands: implemented
 - editor state: not implemented
 - WPL/rendering integration: not implemented
 - runtime node evaluation: not implemented

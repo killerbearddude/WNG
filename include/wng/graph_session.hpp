@@ -19,9 +19,22 @@
 
 namespace wng
 {
+    // Reports both halves of a session-routed command operation. Graph mutation
+    // happens before history recording because the existing command helpers own
+    // command execution; callers need both results when mutation succeeds but
+    // history recording fails due to allocation or record validation.
+    struct GraphSessionCommandResult {
+        GraphCommandResult command;
+        Result history_result = Result::Ok;
+
+        // Returns true only when the graph command succeeded and its successful
+        // record was accepted by the session history owner.
+        bool success() const;
+    };
+
     // Owns one in-memory graph working state for embedders. This class is the
     // first product-shaped API over the existing graph-core primitives; it does
-    // not execute graph commands automatically or own editor/WPL/runtime state.
+    // not own editor UI, WPL rendering, persistence, or runtime evaluation state.
     class GraphSession {
     public:
         // Returns the mutable graph owned by this session. Direct mutations are
@@ -63,7 +76,7 @@ namespace wng
 
         // Marks the session as changed after a caller mutates graph, schema, or
         // history through direct mutable accessors. Session helper methods call
-        // this internally only after their underlying operation succeeds.
+        // this internally after graph state changes succeed.
         void mark_modified();
 
         // Clears the mixed history stacks without changing graph/schema data. This
@@ -90,6 +103,31 @@ namespace wng
         // history is cleared because old undo entries refer to the previous graph.
         Result import_graph(const GraphDto& graph_dto);
 
+        // Executes a graph-core node creation command, records the successful
+        // command in session history, and marks the session modified when graph
+        // state changes.
+        GraphSessionCommandResult create_node(const NodeDesc& desc);
+
+        // Executes a graph-core node destruction command, records the successful
+        // command in session history, and preserves the command's mutation summary.
+        GraphSessionCommandResult destroy_node(NodeId node);
+
+        // Executes a graph-core port creation command against the owned graph and
+        // records the successful command in session history.
+        GraphSessionCommandResult add_port(NodeId node, const PortDesc& desc);
+
+        // Executes a graph-core port removal command against the owned graph and
+        // records removed-port and dependent-link metadata in session history.
+        GraphSessionCommandResult remove_port(PortId port);
+
+        // Executes a graph-core link creation command against the owned graph and
+        // records the successful command in session history.
+        GraphSessionCommandResult create_link(PortId from, PortId to);
+
+        // Executes a graph-core link destruction command against the owned graph
+        // and records the removed-link snapshot in session history.
+        GraphSessionCommandResult destroy_link(LinkId link);
+
         // Records one successful graph command in the mixed history and advances
         // the session revision only if the record is accepted by GraphHistory.
         Result record_graph_command(const GraphCommandRecord& record);
@@ -112,6 +150,9 @@ namespace wng
         GraphHistoryOperationResult redo();
 
     private:
+        GraphSessionCommandResult record_executed_command(
+            const GraphCommandResult& command_result);
+
         Graph graph_;
         GraphSchema schema_;
         GraphHistory history_;

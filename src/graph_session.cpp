@@ -5,12 +5,18 @@
 #include <wng/graph_session.hpp>
 
 #include <wng/execution_plan.hpp>
+#include <wng/graph_command.hpp>
 #include <wng/graph_history.hpp>
 #include <wng/graph_validation.hpp>
 #include <wng/serialization.hpp>
 
 namespace wng
 {
+    bool GraphSessionCommandResult::success() const
+    {
+        return command.success() && history_result == Result::Ok;
+    }
+
     Graph& GraphSession::graph()
     {
         return graph_;
@@ -101,6 +107,38 @@ namespace wng
         return Result::Ok;
     }
 
+    GraphSessionCommandResult GraphSession::create_node(const NodeDesc& desc)
+    {
+        return record_executed_command(wng::command_create_node(graph_, desc));
+    }
+
+    GraphSessionCommandResult GraphSession::destroy_node(NodeId node)
+    {
+        return record_executed_command(wng::command_destroy_node(graph_, node));
+    }
+
+    GraphSessionCommandResult GraphSession::add_port(
+        NodeId node,
+        const PortDesc& desc)
+    {
+        return record_executed_command(wng::command_add_port(graph_, node, desc));
+    }
+
+    GraphSessionCommandResult GraphSession::remove_port(PortId port)
+    {
+        return record_executed_command(wng::command_remove_port(graph_, port));
+    }
+
+    GraphSessionCommandResult GraphSession::create_link(PortId from, PortId to)
+    {
+        return record_executed_command(wng::command_create_link(graph_, from, to));
+    }
+
+    GraphSessionCommandResult GraphSession::destroy_link(LinkId link)
+    {
+        return record_executed_command(wng::command_destroy_link(graph_, link));
+    }
+
     Result GraphSession::record_graph_command(const GraphCommandRecord& record)
     {
         const Result result = history_.record_graph_command(record);
@@ -145,5 +183,24 @@ namespace wng
             mark_modified();
         }
         return result;
+    }
+
+    GraphSessionCommandResult GraphSession::record_executed_command(
+        const GraphCommandResult& command_result)
+    {
+        GraphSessionCommandResult session_result;
+        session_result.command = command_result;
+
+        if (!command_result.success()) {
+            return session_result;
+        }
+
+        session_result.history_result = history_.record_graph_command(command_result.record);
+
+        // Command helpers mutate the graph before returning a successful record.
+        // Even if history recording fails afterward, the visible graph has changed
+        // and the session must report a new dirty revision.
+        mark_modified();
+        return session_result;
     }
 }
