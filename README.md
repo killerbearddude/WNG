@@ -49,6 +49,8 @@ Current graph session status:
 - undo/redo routing through mixed graph history: implemented
 - session-routed graph command execution: implemented
 - automatic session history recording for graph commands: implemented
+- session-routed schema-aware command execution: implemented
+- automatic session history recording for schema-aware commands: implemented
 - editor state: not implemented
 - WPL/rendering integration: not implemented
 - runtime node evaluation: not implemented
