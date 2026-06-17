@@ -112,6 +112,16 @@ namespace wng
         return record_executed_command(wng::command_create_node(graph_, desc));
     }
 
+    GraphSessionCommandResult GraphSession::create_schema_node(const NodeDesc& desc)
+    {
+        return record_executed_command(wng::command_create_node(graph_, schema_, desc));
+    }
+
+    GraphSessionCommandResult GraphSession::instantiate_node(const NodeDesc& desc)
+    {
+        return record_executed_command(wng::command_instantiate_node(graph_, schema_, desc));
+    }
+
     GraphSessionCommandResult GraphSession::destroy_node(NodeId node)
     {
         return record_executed_command(wng::command_destroy_node(graph_, node));
@@ -124,6 +134,13 @@ namespace wng
         return record_executed_command(wng::command_add_port(graph_, node, desc));
     }
 
+    GraphSessionCommandResult GraphSession::add_schema_port(
+        NodeId node,
+        const PortDesc& desc)
+    {
+        return record_executed_command(wng::command_add_port(graph_, schema_, node, desc));
+    }
+
     GraphSessionCommandResult GraphSession::remove_port(PortId port)
     {
         return record_executed_command(wng::command_remove_port(graph_, port));
@@ -132,6 +149,11 @@ namespace wng
     GraphSessionCommandResult GraphSession::create_link(PortId from, PortId to)
     {
         return record_executed_command(wng::command_create_link(graph_, from, to));
+    }
+
+    GraphSessionCommandResult GraphSession::create_schema_link(PortId from, PortId to)
+    {
+        return record_executed_command(wng::command_create_link(graph_, schema_, from, to));
     }
 
     GraphSessionCommandResult GraphSession::destroy_link(LinkId link)
