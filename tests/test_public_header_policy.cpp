@@ -92,6 +92,134 @@ namespace
         assert(!availability.any_available());
     }
 
+    void assert_editor_state_set_commands()
+    {
+        wng::GraphEditorState editor_state;
+        const wng::NodeId node { 11U };
+        const wng::PortId source_port { 21U };
+        const wng::PortId target_port { 22U };
+        const wng::LinkId link { 31U };
+
+        wng::GraphEditorStateCommandResult command =
+            wng::select_graph_editor_node(editor_state, wng::NodeId {});
+        assert(command.result == wng::Result::InvalidArgument);
+        assert(!command.success());
+        assert(!command.changed);
+        assert(!command.before.clear_selection);
+        assert(!command.after.clear_selection);
+
+        command = wng::select_graph_editor_node(editor_state, node);
+        assert(command.success());
+        assert(command.changed);
+        assert(!command.before.clear_selection);
+        assert(command.after.clear_selection);
+        assert(command.after.remove_selection);
+        assert(editor_state.node_selected(node));
+
+        command = wng::select_graph_editor_node(editor_state, node);
+        assert(command.result == wng::Result::AlreadyExists);
+        assert(!command.success());
+        assert(!command.changed);
+        assert(command.before.clear_selection);
+        assert(command.after.clear_selection);
+
+        command = wng::select_graph_editor_port(editor_state, source_port);
+        assert(command.success());
+        assert(command.changed);
+        assert(command.before.clear_selection);
+        assert(command.after.clear_selection);
+        assert(editor_state.port_selected(source_port));
+
+        command = wng::select_graph_editor_link(editor_state, link);
+        assert(command.success());
+        assert(command.changed);
+        assert(editor_state.link_selected(link));
+
+        command = wng::set_graph_editor_hovered_node(editor_state, wng::NodeId {});
+        assert(command.result == wng::Result::InvalidArgument);
+        assert(!command.success());
+        assert(!command.changed);
+        assert(!command.before.clear_hover);
+        assert(!command.after.clear_hover);
+
+        command = wng::set_graph_editor_hovered_node(editor_state, node);
+        assert(command.success());
+        assert(command.changed);
+        assert(!command.before.clear_hover);
+        assert(command.after.clear_hover);
+        assert(editor_state.hovered().kind == wng::GraphEditorElementKind::Node);
+        assert(editor_state.hovered().node == node);
+
+        command = wng::set_graph_editor_hovered_node(editor_state, node);
+        assert(command.success());
+        assert(!command.changed);
+        assert(command.before.clear_hover);
+        assert(command.after.clear_hover);
+
+        command = wng::set_graph_editor_hovered_port(editor_state, source_port);
+        assert(command.success());
+        assert(command.changed);
+        assert(editor_state.hovered().kind == wng::GraphEditorElementKind::Port);
+        assert(editor_state.hovered().port == source_port);
+
+        command = wng::set_graph_editor_hovered_link(editor_state, link);
+        assert(command.success());
+        assert(command.changed);
+        assert(editor_state.hovered().kind == wng::GraphEditorElementKind::Link);
+        assert(editor_state.hovered().link == link);
+
+        command = wng::begin_graph_editor_pending_link(editor_state, wng::PortId {});
+        assert(command.result == wng::Result::InvalidArgument);
+        assert(!command.success());
+        assert(!command.changed);
+        assert(!command.before.cancel_pending_link);
+        assert(!command.after.cancel_pending_link);
+
+        wng::GraphEditorState inactive_pending_state;
+        command = wng::set_graph_editor_pending_link_target(
+            inactive_pending_state,
+            target_port);
+        assert(command.result == wng::Result::InvalidArgument);
+        assert(!command.success());
+        assert(!command.changed);
+        assert(!command.before.cancel_pending_link);
+        assert(!command.after.cancel_pending_link);
+
+        command = wng::begin_graph_editor_pending_link(editor_state, source_port);
+        assert(command.success());
+        assert(command.changed);
+        assert(!command.before.cancel_pending_link);
+        assert(command.after.cancel_pending_link);
+        assert(!command.after.complete_pending_link);
+
+        command = wng::begin_graph_editor_pending_link(editor_state, source_port);
+        assert(command.success());
+        assert(!command.changed);
+        assert(command.before.cancel_pending_link);
+        assert(command.after.cancel_pending_link);
+
+        command = wng::set_graph_editor_pending_link_target(editor_state, source_port);
+        assert(command.success());
+        assert(command.changed);
+        assert(command.before.cancel_pending_link);
+        assert(command.after.cancel_pending_link);
+        assert(!command.after.complete_pending_link);
+
+        command = wng::set_graph_editor_pending_link_target(editor_state, target_port);
+        assert(command.success());
+        assert(command.changed);
+        assert(command.before.cancel_pending_link);
+        assert(!command.before.complete_pending_link);
+        assert(command.after.cancel_pending_link);
+        assert(command.after.complete_pending_link);
+
+        command = wng::set_graph_editor_pending_link_target(editor_state, target_port);
+        assert(command.success());
+        assert(!command.changed);
+        assert(command.before.complete_pending_link);
+        assert(command.after.complete_pending_link);
+    }
+
     void assert_editor_state_clear_commands()
     {
         wng::GraphEditorState editor_state;
@@ -219,6 +347,7 @@ int main()
     }
 
     assert_editor_state_availability();
+    assert_editor_state_set_commands();
     assert_editor_state_clear_commands();
 
     return 0;
