@@ -64,6 +64,20 @@ namespace wng
         }
     };
 
+    // Reports the outcome of an editor-state-only command. These commands do not
+    // touch graph storage, command history, schema policy, or GraphSession.
+    struct GraphEditorStateCommandResult {
+        Result result = Result::Ok;
+        bool changed = false;
+        GraphEditorCommandAvailability before;
+        GraphEditorCommandAvailability after;
+
+        bool success() const
+        {
+            return result == Result::Ok;
+        }
+    };
+
     // Captures a non-rendering pending link interaction. WNG core stores only
     // stable port IDs here; screen-space mouse positions and hit testing belong
     // to higher layers.
@@ -143,5 +157,56 @@ namespace wng
         availability.cancel_pending_link = graph_editor_has_active_pending_link(editor_state);
         availability.complete_pending_link = graph_editor_can_complete_pending_link(editor_state);
         return availability;
+    }
+
+    inline GraphEditorStateCommandResult clear_graph_editor_selection(
+        GraphEditorState& editor_state)
+    {
+        GraphEditorStateCommandResult result;
+        result.before = graph_editor_command_availability(editor_state);
+        if (!result.before.clear_selection) {
+            result.result = Result::InvalidArgument;
+            result.after = result.before;
+            return result;
+        }
+
+        editor_state.clear_selection();
+        result.changed = true;
+        result.after = graph_editor_command_availability(editor_state);
+        return result;
+    }
+
+    inline GraphEditorStateCommandResult clear_graph_editor_hover(
+        GraphEditorState& editor_state)
+    {
+        GraphEditorStateCommandResult result;
+        result.before = graph_editor_command_availability(editor_state);
+        if (!result.before.clear_hover) {
+            result.result = Result::InvalidArgument;
+            result.after = result.before;
+            return result;
+        }
+
+        editor_state.clear_hovered();
+        result.changed = true;
+        result.after = graph_editor_command_availability(editor_state);
+        return result;
+    }
+
+    inline GraphEditorStateCommandResult cancel_graph_editor_pending_link(
+        GraphEditorState& editor_state)
+    {
+        GraphEditorStateCommandResult result;
+        result.before = graph_editor_command_availability(editor_state);
+        if (!result.before.cancel_pending_link) {
+            result.result = Result::InvalidArgument;
+            result.after = result.before;
+            return result;
+        }
+
+        editor_state.clear_pending_link();
+        result.changed = true;
+        result.after = graph_editor_command_availability(editor_state);
+        return result;
     }
 }

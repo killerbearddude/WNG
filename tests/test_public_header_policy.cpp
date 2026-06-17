@@ -91,6 +91,63 @@ namespace
         assert(!availability.complete_pending_link);
         assert(!availability.any_available());
     }
+
+    void assert_editor_state_clear_commands()
+    {
+        wng::GraphEditorState editor_state;
+        wng::GraphEditorStateCommandResult command =
+            wng::clear_graph_editor_selection(editor_state);
+        assert(command.result == wng::Result::InvalidArgument);
+        assert(!command.success());
+        assert(!command.changed);
+        assert(!command.before.clear_selection);
+        assert(!command.after.clear_selection);
+
+        const wng::NodeId node { 11U };
+        const wng::PortId source_port { 21U };
+        const wng::PortId target_port { 22U };
+
+        assert(editor_state.select_node(node) == wng::Result::Ok);
+        command = wng::clear_graph_editor_selection(editor_state);
+        assert(command.success());
+        assert(command.changed);
+        assert(command.before.clear_selection);
+        assert(command.before.remove_selection);
+        assert(!command.after.clear_selection);
+        assert(!command.after.remove_selection);
+        assert(!wng::graph_editor_has_selection(editor_state));
+
+        command = wng::clear_graph_editor_hover(editor_state);
+        assert(command.result == wng::Result::InvalidArgument);
+        assert(!command.changed);
+        assert(!command.before.clear_hover);
+        assert(!command.after.clear_hover);
+
+        assert(editor_state.set_hovered_port(target_port) == wng::Result::Ok);
+        command = wng::clear_graph_editor_hover(editor_state);
+        assert(command.success());
+        assert(command.changed);
+        assert(command.before.clear_hover);
+        assert(!command.after.clear_hover);
+        assert(!wng::graph_editor_has_hover(editor_state));
+
+        command = wng::cancel_graph_editor_pending_link(editor_state);
+        assert(command.result == wng::Result::InvalidArgument);
+        assert(!command.changed);
+        assert(!command.before.cancel_pending_link);
+        assert(!command.after.cancel_pending_link);
+
+        assert(editor_state.begin_pending_link(source_port) == wng::Result::Ok);
+        assert(editor_state.set_pending_link_target(target_port) == wng::Result::Ok);
+        command = wng::cancel_graph_editor_pending_link(editor_state);
+        assert(command.success());
+        assert(command.changed);
+        assert(command.before.cancel_pending_link);
+        assert(command.before.complete_pending_link);
+        assert(!command.after.cancel_pending_link);
+        assert(!command.after.complete_pending_link);
+        assert(!wng::graph_editor_has_active_pending_link(editor_state));
+    }
 }
 
 int main()
@@ -162,6 +219,7 @@ int main()
     }
 
     assert_editor_state_availability();
+    assert_editor_state_clear_commands();
 
     return 0;
 }
