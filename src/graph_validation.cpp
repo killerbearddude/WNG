@@ -332,16 +332,27 @@ namespace
             return;
         }
 
-        const wng::Result result = options.callback->validate_graph(graph, report);
-        if (result != wng::Result::Ok) {
+        try {
+            const wng::Result result = options.callback->validate_graph(graph, report);
+            if (result != wng::Result::Ok) {
+                add_issue(
+                    report,
+                    wng::ValidationIssueCode::HostValidationIssue,
+                    result,
+                    wng::NodeId {},
+                    wng::PortId {},
+                    wng::LinkId {},
+                    "host validation callback failed");
+            }
+        } catch (const std::bad_alloc&) {
             add_issue(
                 report,
-                wng::ValidationIssueCode::HostValidationIssue,
-                result,
+                wng::ValidationIssueCode::ResourceExhausted,
+                resource_exhausted_result(),
                 wng::NodeId {},
                 wng::PortId {},
                 wng::LinkId {},
-                "host validation callback failed");
+                "resource exhausted while running host validation callback");
         }
     }
 
