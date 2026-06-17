@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <vector>
 
 #include <wng/ids.hpp>
@@ -29,6 +30,19 @@ namespace wng
         LinkId link {};
 
         bool valid() const;
+    };
+
+    // Compact read-only summary of editor selection state. This lets higher
+    // layers decide command availability without inspecting the selection vectors
+    // directly or depending on UI/editor widgets.
+    struct GraphEditorSelectionSummary {
+        std::size_t node_count = 0;
+        std::size_t port_count = 0;
+        std::size_t link_count = 0;
+
+        std::size_t total_count() const;
+        bool empty() const;
+        bool single() const;
     };
 
     // Captures a non-rendering pending link interaction. WNG core stores only
@@ -87,4 +101,16 @@ namespace wng
         GraphEditorElement hovered_;
         GraphEditorPendingLink pending_link_;
     };
+
+    GraphEditorSelectionSummary graph_editor_selection_summary(
+        const GraphEditorState& editor_state);
+
+    bool graph_editor_has_selection(const GraphEditorState& editor_state);
+    bool graph_editor_has_hover(const GraphEditorState& editor_state);
+    bool graph_editor_has_active_pending_link(const GraphEditorState& editor_state);
+    bool graph_editor_has_pending_link_candidate(const GraphEditorState& editor_state);
+    bool graph_editor_can_complete_pending_link(const GraphEditorState& editor_state);
+
+    GraphEditorElement graph_editor_single_selected_element(
+        const GraphEditorState& editor_state);
 }
