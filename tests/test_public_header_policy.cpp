@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include <wng/graph_editor_state.hpp>
+
 namespace
 {
     std::string read_file(const std::string& path)
@@ -24,6 +26,70 @@ namespace
     void require_absent(const std::string& text, const std::string& needle)
     {
         assert(!contains(text, needle));
+    }
+
+    void assert_editor_state_availability()
+    {
+        wng::GraphEditorState editor_state;
+        wng::GraphEditorCommandAvailability availability =
+            wng::graph_editor_command_availability(editor_state);
+
+        assert(!availability.clear_selection);
+        assert(!availability.remove_selection);
+        assert(!availability.clear_hover);
+        assert(!availability.cancel_pending_link);
+        assert(!availability.complete_pending_link);
+        assert(!availability.any_available());
+
+        const wng::NodeId node { 11U };
+        const wng::PortId source_port { 21U };
+        const wng::PortId target_port { 22U };
+
+        assert(editor_state.select_node(node) == wng::Result::Ok);
+        availability = wng::graph_editor_command_availability(editor_state);
+        assert(availability.clear_selection);
+        assert(availability.remove_selection);
+        assert(!availability.clear_hover);
+        assert(!availability.cancel_pending_link);
+        assert(!availability.complete_pending_link);
+        assert(availability.any_available());
+
+        assert(editor_state.set_hovered_port(target_port) == wng::Result::Ok);
+        availability = wng::graph_editor_command_availability(editor_state);
+        assert(availability.clear_selection);
+        assert(availability.remove_selection);
+        assert(availability.clear_hover);
+        assert(!availability.cancel_pending_link);
+        assert(!availability.complete_pending_link);
+        assert(availability.any_available());
+
+        assert(editor_state.begin_pending_link(source_port) == wng::Result::Ok);
+        availability = wng::graph_editor_command_availability(editor_state);
+        assert(availability.cancel_pending_link);
+        assert(!availability.complete_pending_link);
+        assert(availability.any_available());
+
+        assert(editor_state.set_pending_link_target(source_port) == wng::Result::Ok);
+        availability = wng::graph_editor_command_availability(editor_state);
+        assert(availability.cancel_pending_link);
+        assert(!availability.complete_pending_link);
+
+        assert(editor_state.set_pending_link_target(target_port) == wng::Result::Ok);
+        availability = wng::graph_editor_command_availability(editor_state);
+        assert(availability.cancel_pending_link);
+        assert(availability.complete_pending_link);
+        assert(availability.any_available());
+
+        editor_state.clear_selection();
+        editor_state.clear_hovered();
+        editor_state.clear_pending_link();
+        availability = wng::graph_editor_command_availability(editor_state);
+        assert(!availability.clear_selection);
+        assert(!availability.remove_selection);
+        assert(!availability.clear_hover);
+        assert(!availability.cancel_pending_link);
+        assert(!availability.complete_pending_link);
+        assert(!availability.any_available());
     }
 }
 
@@ -94,6 +160,8 @@ int main()
         require_absent(text, "<Windows.h>");
         require_absent(text, "<functional>");
     }
+
+    assert_editor_state_availability();
 
     return 0;
 }
