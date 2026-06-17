@@ -108,6 +108,14 @@ namespace wng
         // state changes.
         GraphSessionCommandResult create_node(const NodeDesc& desc);
 
+        // Executes a schema-aware node creation command using the session schema.
+        // This validates node type availability without instantiating schema ports.
+        GraphSessionCommandResult create_schema_node(const NodeDesc& desc);
+
+        // Executes schema-defined node instantiation using the session schema. On
+        // success, the command record captures the created node and schema ports.
+        GraphSessionCommandResult instantiate_node(const NodeDesc& desc);
+
         // Executes a graph-core node destruction command, records the successful
         // command in session history, and preserves the command's mutation summary.
         GraphSessionCommandResult destroy_node(NodeId node);
@@ -116,6 +124,10 @@ namespace wng
         // records the successful command in session history.
         GraphSessionCommandResult add_port(NodeId node, const PortDesc& desc);
 
+        // Executes a schema-aware port creation command using the session schema.
+        // The schema decides whether the node type allows the requested port.
+        GraphSessionCommandResult add_schema_port(NodeId node, const PortDesc& desc);
+
         // Executes a graph-core port removal command against the owned graph and
         // records removed-port and dependent-link metadata in session history.
         GraphSessionCommandResult remove_port(PortId port);
@@ -123,6 +135,10 @@ namespace wng
         // Executes a graph-core link creation command against the owned graph and
         // records the successful command in session history.
         GraphSessionCommandResult create_link(PortId from, PortId to);
+
+        // Executes a schema-aware link creation command using the session schema.
+        // Built-in and schema connection rules are both applied before success.
+        GraphSessionCommandResult create_schema_link(PortId from, PortId to);
 
         // Executes a graph-core link destruction command against the owned graph
         // and records the removed-link snapshot in session history.
