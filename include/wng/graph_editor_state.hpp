@@ -21,6 +21,15 @@ namespace wng
         Link
     };
 
+    // Identifies editor-state-only commands that require no graph object operand.
+    // Commands that require IDs stay as explicit typed helpers to avoid weakly
+    // typed payloads in the graph core API.
+    enum class GraphEditorCommandId {
+        ClearSelection,
+        ClearHover,
+        CancelPendingLink
+    };
+
     // Stable-ID reference to one graph object. Only the field matching kind is
     // meaningful; the other IDs remain invalid sentinel values.
     struct GraphEditorElement {
@@ -157,6 +166,31 @@ namespace wng
         availability.cancel_pending_link = graph_editor_has_active_pending_link(editor_state);
         availability.complete_pending_link = graph_editor_can_complete_pending_link(editor_state);
         return availability;
+    }
+
+    inline bool graph_editor_command_available(
+        const GraphEditorCommandAvailability& availability,
+        GraphEditorCommandId command)
+    {
+        switch (command) {
+        case GraphEditorCommandId::ClearSelection:
+            return availability.clear_selection;
+        case GraphEditorCommandId::ClearHover:
+            return availability.clear_hover;
+        case GraphEditorCommandId::CancelPendingLink:
+            return availability.cancel_pending_link;
+        }
+
+        return false;
+    }
+
+    inline bool graph_editor_command_available(
+        const GraphEditorState& editor_state,
+        GraphEditorCommandId command)
+    {
+        return graph_editor_command_available(
+            graph_editor_command_availability(editor_state),
+            command);
     }
 
     inline GraphEditorStateCommandResult select_graph_editor_node(
@@ -312,6 +346,26 @@ namespace wng
         editor_state.clear_pending_link();
         result.changed = true;
         result.after = graph_editor_command_availability(editor_state);
+        return result;
+    }
+
+    inline GraphEditorStateCommandResult run_graph_editor_state_command(
+        GraphEditorState& editor_state,
+        GraphEditorCommandId command)
+    {
+        switch (command) {
+        case GraphEditorCommandId::ClearSelection:
+            return clear_graph_editor_selection(editor_state);
+        case GraphEditorCommandId::ClearHover:
+            return clear_graph_editor_hover(editor_state);
+        case GraphEditorCommandId::CancelPendingLink:
+            return cancel_graph_editor_pending_link(editor_state);
+        }
+
+        GraphEditorStateCommandResult result;
+        result.before = graph_editor_command_availability(editor_state);
+        result.result = Result::InvalidArgument;
+        result.after = result.before;
         return result;
     }
 }
