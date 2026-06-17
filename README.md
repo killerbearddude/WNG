@@ -204,29 +204,6 @@ Current graph diff status:
 - editor visual diffing: not implemented
 
 
-## Schema migration status
-
-WNG includes deterministic schema diagnostics and schema migration foundations for graph-core schema evolution.
-
-Current schema migration status:
-
-- schema snapshots: implemented
-- schema diffing: implemented
-- schema compatibility checks: implemented
-- schema migration planning: implemented
-- schema migration policy validation: implemented
-- schema migration apply preview: implemented
-- schema migration command preview: implemented
-- schema migration apply: implemented
-- schema migration apply with object removals: implemented
-- schema migration apply command records: implemented
-- schema migration apply command history: implemented
-- file format migration: not implemented
-- editor migration UI: not implemented
-- visual migration diffing: not implemented
-- automatic editor transaction manager: not implemented
-
-
 ## Mutation preview status
 
 WNG includes non-mutating previews for destructive graph mutations.
@@ -241,3 +218,233 @@ Current mutation preview status:
 - host consequence-preview callbacks: implemented
 - editor consequence UI: not implemented
 - selection cleanup integration: not implemented
+
+
+## Graph snapshot status
+
+WNG includes an in-memory graph snapshot abstraction built on DTO import/export.
+
+Current graph snapshot status:
+
+- capture graph snapshot: implemented
+- restore graph snapshot: implemented
+- stable-ID preservation during restore: implemented
+- atomic graph replacement during restore: implemented
+- graph diff compatibility: implemented
+- live graph to snapshot diffing: implemented
+- snapshot to snapshot diffing: implemented
+- file I/O: not implemented
+- JSON serialization: not implemented
+- binary serialization: not implemented
+- editor state snapshots: not implemented
+- selection snapshots: not implemented
+
+
+## Schema snapshot status
+
+WNG includes an in-memory schema snapshot abstraction for diagnostics and tests.
+
+Current schema snapshot status:
+
+- capture schema snapshot: implemented
+- restore schema snapshot: implemented
+- node definition preservation: implemented
+- port definition preservation: implemented
+- atomic schema replacement during restore: implemented
+- schema-aware behavior after restore: implemented
+- schema diffing: implemented
+- schema migration support: implemented
+- file I/O: not implemented
+- JSON serialization: not implemented
+- editor schema drafts: not implemented
+
+## Schema diff status
+
+WNG includes deterministic schema diffing for schema diagnostics and tests.
+
+Current schema diff status:
+
+- node definition added/removed/modified diffing: implemented
+- port definition added/removed/modified diffing: implemented
+- stable node-type based matching: implemented
+- stable port-definition matching by node type, port kind, and port name: implemented
+- schema snapshot diffing: implemented
+- deterministic diff ordering: implemented
+- schema migration planning integration: implemented
+- schema patch application: not implemented
+- schema merge/conflict resolution: not implemented
+- schema persistence: not implemented
+
+## Schema compatibility status
+
+WNG includes read-only schema compatibility analysis for graph/schema diagnostics.
+
+Current schema compatibility status:
+
+- source-schema validation analysis: implemented
+- target-schema validation analysis: implemented
+- schema diff integration: implemented
+- affected node reporting: implemented
+- affected port reporting: implemented
+- deterministic affected-ID ordering: implemented
+- schema migration planning integration: implemented
+- automatic graph repair: not implemented
+- schema patch application: not implemented
+- editor migration UI: not implemented
+
+
+## Schema migration planning status
+
+WNG includes read-only schema migration planning for graph/schema diagnostics.
+
+Current schema migration planning status:
+
+- schema compatibility report consumption: implemented
+- removed node type action planning: implemented
+- modified node type action planning: implemented
+- removed port definition action planning: implemented
+- modified port definition action planning: implemented
+- added required port action planning: implemented
+- deterministic affected-ID reporting: implemented
+- migration policy coverage reporting: implemented
+- migration application integration: implemented
+- automatic graph repair: not implemented
+- custom migration execution: not implemented
+- editor migration UI: not implemented
+
+## Schema migration policy status
+
+WNG includes a value-oriented schema migration policy model for future migration workflows.
+
+Current schema migration policy status:
+
+- node type rename policy: implemented
+- port definition rename policy: implemented
+- port type change policy: implemented
+- required port default policy: implemented
+- node type removal acknowledgement: implemented
+- port definition removal acknowledgement: implemented
+- structural policy validation: implemented
+- policy-aware migration planning: implemented
+- schema-aware policy validation: implemented
+- migration application integration: implemented
+- automatic graph repair: not implemented
+- policy persistence: not implemented
+
+## Schema migration apply preview status
+
+WNG includes a read-only preview layer for schema migration application readiness.
+
+Current schema migration apply preview status:
+
+- schema-aware policy validation integration: implemented
+- policy-aware migration planning integration: implemented
+- uncovered blocking action reporting: implemented
+- covered blocking action reporting: implemented
+- non-blocking action reporting: implemented
+- readiness classification: implemented
+- migration application integration: implemented
+- automatic graph repair: not implemented
+- command generation: not implemented
+- editor migration UI: not implemented
+
+## Schema migration command preview status
+
+WNG includes a read-only preview of prospective schema migration operations.
+
+Current schema migration command preview status:
+
+- node type rename preview steps: implemented
+- port definition rename preview steps: implemented
+- port type change preview steps: implemented
+- required port creation preview steps: implemented
+- node removal preview steps: implemented
+- port removal preview steps: implemented
+- deterministic affected-ID reporting: implemented
+- migration application integration: implemented
+- graph command generation: not implemented
+- automatic graph repair: not implemented
+- editor migration UI: not implemented
+
+## Schema migration apply status
+
+WNG includes atomic application for policy-covered schema migrations.
+
+Current schema migration apply status:
+
+- node type rename application: implemented
+- port definition rename application: implemented
+- port type metadata change application: implemented
+- required port creation from policy defaults: implemented
+- destructive node removal application: implemented
+- destructive port removal application: implemented
+- dependent link cleanup during destructive apply: implemented
+- atomic graph replacement on success: implemented
+- before/after graph diff reporting: implemented
+- target schema validation after apply: implemented
+- graph command generation: not implemented
+- undo/redo history integration: not implemented
+- editor migration UI: not implemented
+
+## Schema migration apply command status
+
+WNG includes a graph-level command wrapper for completed schema migrations.
+
+Current schema migration apply command status:
+
+- before graph snapshot capture: implemented
+- after graph snapshot capture: implemented
+- migration apply result preservation: implemented
+- before/after graph diff preservation: implemented
+- manual snapshot restore for future undo/redo: implemented
+- GraphCommandHistory integration: not implemented
+- GraphCommandRecord integration: not implemented
+- automatic undo/redo integration: not implemented
+- editor migration history: not implemented
+
+## Schema migration apply command history status
+
+WNG includes a dedicated history stack for schema migration apply command records.
+
+Current schema migration apply command history status:
+
+- migration apply command record stack ownership: implemented
+- undo by restoring before graph snapshot: implemented
+- redo by restoring after graph snapshot: implemented
+- redo invalidation after new migration command record: implemented
+- failed command record rejection: implemented
+- GraphCommandHistory integration: not implemented
+- GraphCommandRecord integration: not implemented
+- mixed graph-command/migration-command history: implemented through GraphHistory
+- editor migration history: not implemented
+- selection/editor-state history: not implemented
+
+## Graph-level history status
+
+WNG includes a mixed graph-level history stack for user-level graph operations.
+
+Current graph-level history status:
+
+- normal graph command batch entries: implemented
+- schema migration apply command entries: implemented
+- graph command transaction commit integration: implemented
+- mixed chronological undo/redo ordering: implemented
+- redo invalidation after new mixed entry: implemented
+- specialized GraphCommandHistory remains available: implemented
+- specialized SchemaMigrationApplyCommandHistory remains available: implemented
+- editor state history: not implemented
+- selection state history: not implemented
+- WPL/editor integration: not implemented
+
+## Build
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+## Boundary
+
+`wng_core` does not include WPL headers and has no dependency on WPL include paths.
+WPL remains a future integration target outside WNG-0.1.
