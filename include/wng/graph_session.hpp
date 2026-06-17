@@ -10,6 +10,7 @@
 #include <wng/execution_plan.hpp>
 #include <wng/graph.hpp>
 #include <wng/graph_command.hpp>
+#include <wng/graph_command_transaction.hpp>
 #include <wng/graph_history.hpp>
 #include <wng/graph_validation.hpp>
 #include <wng/result.hpp>
@@ -143,6 +144,17 @@ namespace wng
         // Executes a graph-core link destruction command against the owned graph
         // and records the removed-link snapshot in session history.
         GraphSessionCommandResult destroy_link(LinkId link);
+
+        // Records a completed transaction as one mixed graph-history entry. The
+        // transaction must contain command results produced against this session's
+        // graph; GraphSession does not execute or inspect editor operation state.
+        GraphTransactionResult commit_transaction(
+            const GraphCommandTransaction& transaction);
+
+        // Rolls back successful graph effects stored in a pending transaction by
+        // applying the existing undo layer against this session's graph.
+        GraphTransactionResult rollback_transaction(
+            const GraphCommandTransaction& transaction);
 
         // Records one successful graph command in the mixed history and advances
         // the session revision only if the record is accepted by GraphHistory.
