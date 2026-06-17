@@ -81,6 +81,7 @@ function(wng_add_test name source)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
+wng_add_test(test_assertions_enabled tests/test_assertions_enabled.cpp)
 wng_add_test(test_ids tests/test_ids.cpp)
 wng_add_test(test_graph_nodes tests/test_graph_nodes.cpp)
 wng_add_test(test_graph_ports tests/test_graph_ports.cpp)
