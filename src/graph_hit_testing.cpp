@@ -6,9 +6,9 @@
 #include <wng/graph_hit_testing.hpp>
 
 #include <algorithm>
-#include <cmath>
 #include <cstddef>
 #include <limits>
+#include <vector>
 
 namespace
 {
@@ -85,12 +85,17 @@ namespace
         return node.visible && enabled_for_hit_test(node, options);
     }
 
+    bool should_layout_port(const wng::Port& port, const wng::Node& node)
+    {
+        return port.visible && node.visible;
+    }
+
     bool should_hit_port(
         const wng::Port& port,
         const wng::Node& node,
         const wng::GraphHitTestOptions& options)
     {
-        return port.visible && node.visible &&
+        return should_layout_port(port, node) &&
                enabled_for_hit_test(port, options) &&
                enabled_for_hit_test(node, options);
     }
@@ -120,7 +125,6 @@ namespace
         const wng::Graph& graph,
         const wng::Node& node,
         const wng::Port& port,
-        const wng::GraphHitTestOptions& options,
         std::size_t& out_index,
         std::size_t& out_count)
     {
@@ -134,7 +138,7 @@ namespace
             if (candidate == nullptr || candidate->kind != port.kind) {
                 continue;
             }
-            if (!should_hit_port(*candidate, node, options)) {
+            if (!should_layout_port(*candidate, node)) {
                 continue;
             }
 
@@ -161,7 +165,7 @@ namespace
 
         std::size_t index = 0;
         std::size_t count = 0;
-        if (!visible_port_slot(graph, *node, port, options, index, count)) {
+        if (!visible_port_slot(graph, *node, port, index, count)) {
             return false;
         }
 
