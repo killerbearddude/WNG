@@ -3,6 +3,7 @@
 #include <wng/graph_command.hpp>
 #include <wng/graph_command_history.hpp>
 #include <wng/graph_history.hpp>
+#include <wng/graph_session.hpp>
 #include <wng/graph_command_transaction.hpp>
 #include <wng/graph_diff.hpp>
 #include <wng/graph_restore.hpp>
