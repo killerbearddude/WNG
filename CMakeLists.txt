@@ -106,6 +106,7 @@ wng_add_test(test_graph_validation_resource_exhaustion tests/test_graph_validati
 wng_add_test(test_graph_traversal tests/test_graph_traversal.cpp)
 wng_add_test(test_dirty_propagation tests/test_dirty_propagation.cpp)
 wng_add_test(test_execution_plan tests/test_execution_plan.cpp)
+wng_add_test(test_graph_core_workflow tests/test_graph_core_workflow.cpp)
 wng_add_test(test_graph_command tests/test_graph_command.cpp)
 wng_add_test(test_schema_graph_command tests/test_schema_graph_command.cpp)
 wng_add_test(test_graph_restore tests/test_graph_restore.cpp)
