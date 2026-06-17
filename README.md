@@ -29,6 +29,28 @@ Current WNG-0.2 status:
 
 Import/export operate only on in-memory DTOs and do not define a file format.
 
+## Product-facing session status
+
+WNG includes an in-memory `GraphSession` boundary for embedders that need one
+cohesive graph working state instead of manually stitching together every core
+subsystem.
+
+Current graph session status:
+
+- owned graph state: implemented
+- owned schema state: implemented
+- owned mixed graph history: implemented
+- revision tracking: implemented
+- dirty state tracking: implemented
+- mark-saved baseline: implemented
+- session-level graph/schema validation: implemented
+- session-level execution planning: implemented
+- DTO export/import handoff: implemented
+- undo/redo routing through mixed graph history: implemented
+- editor state: not implemented
+- WPL/rendering integration: not implemented
+- runtime node evaluation: not implemented
+
 ## Schema status
 
 WNG includes a schema foundation for node and port definitions.
