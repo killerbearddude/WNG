@@ -60,6 +60,7 @@ int main()
         "include/wng/graph_command_history.hpp",
         "include/wng/graph_history.hpp",
         "include/wng/graph_session.hpp",
+        "include/wng/graph_editor_state.hpp",
         "include/wng/graph_command_transaction.hpp",
         "include/wng/graph_diff.hpp",
         "include/wng/graph_mutation_preview.hpp",
