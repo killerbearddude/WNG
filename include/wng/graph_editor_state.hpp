@@ -45,6 +45,25 @@ namespace wng
         bool single() const;
     };
 
+    // Read-only command availability flags derived from editor state. This does
+    // not execute commands, mutate graphs, inspect schema, or own UI behavior.
+    struct GraphEditorCommandAvailability {
+        bool clear_selection = false;
+        bool remove_selection = false;
+        bool clear_hover = false;
+        bool cancel_pending_link = false;
+        bool complete_pending_link = false;
+
+        bool any_available() const
+        {
+            return clear_selection ||
+                remove_selection ||
+                clear_hover ||
+                cancel_pending_link ||
+                complete_pending_link;
+        }
+    };
+
     // Captures a non-rendering pending link interaction. WNG core stores only
     // stable port IDs here; screen-space mouse positions and hit testing belong
     // to higher layers.
@@ -113,4 +132,16 @@ namespace wng
 
     GraphEditorElement graph_editor_single_selected_element(
         const GraphEditorState& editor_state);
+
+    inline GraphEditorCommandAvailability graph_editor_command_availability(
+        const GraphEditorState& editor_state)
+    {
+        GraphEditorCommandAvailability availability;
+        availability.clear_selection = graph_editor_has_selection(editor_state);
+        availability.remove_selection = availability.clear_selection;
+        availability.clear_hover = graph_editor_has_hover(editor_state);
+        availability.cancel_pending_link = graph_editor_has_active_pending_link(editor_state);
+        availability.complete_pending_link = graph_editor_can_complete_pending_link(editor_state);
+        return availability;
+    }
 }
