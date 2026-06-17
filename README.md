@@ -198,7 +198,7 @@ Current graph diff status:
 - link added/removed/modified diffing: implemented
 - stable-ID based object matching: implemented
 - deterministic diff ordering: implemented
-- schema diffing: not implemented
+- schema diffing: implemented
 - patch application: not implemented
 - merge/conflict resolution: not implemented
 - editor visual diffing: not implemented
@@ -252,8 +252,8 @@ Current schema snapshot status:
 - port definition preservation: implemented
 - atomic schema replacement during restore: implemented
 - schema-aware behavior after restore: implemented
-- schema diffing: not implemented
-- schema migration: not implemented
+- schema diffing: implemented
+- schema migration support: implemented
 - file I/O: not implemented
 - JSON serialization: not implemented
 - editor schema drafts: not implemented
@@ -270,8 +270,8 @@ Current schema diff status:
 - stable port-definition matching by node type, port kind, and port name: implemented
 - schema snapshot diffing: implemented
 - deterministic diff ordering: implemented
+- schema migration planning integration: implemented
 - schema patch application: not implemented
-- schema migration: not implemented
 - schema merge/conflict resolution: not implemented
 - schema persistence: not implemented
 
@@ -287,7 +287,7 @@ Current schema compatibility status:
 - affected node reporting: implemented
 - affected port reporting: implemented
 - deterministic affected-ID ordering: implemented
-- schema migration: not implemented
+- schema migration planning integration: implemented
 - automatic graph repair: not implemented
 - schema patch application: not implemented
 - editor migration UI: not implemented
@@ -307,7 +307,7 @@ Current schema migration planning status:
 - added required port action planning: implemented
 - deterministic affected-ID reporting: implemented
 - migration policy coverage reporting: implemented
-- migration application: not implemented
+- migration application integration: implemented
 - automatic graph repair: not implemented
 - custom migration execution: not implemented
 - editor migration UI: not implemented
@@ -327,7 +327,7 @@ Current schema migration policy status:
 - structural policy validation: implemented
 - policy-aware migration planning: implemented
 - schema-aware policy validation: implemented
-- migration application: not implemented
+- migration application integration: implemented
 - automatic graph repair: not implemented
 - policy persistence: not implemented
 
@@ -343,7 +343,7 @@ Current schema migration apply preview status:
 - covered blocking action reporting: implemented
 - non-blocking action reporting: implemented
 - readiness classification: implemented
-- migration application: not implemented
+- migration application integration: implemented
 - automatic graph repair: not implemented
 - command generation: not implemented
 - editor migration UI: not implemented
@@ -361,7 +361,7 @@ Current schema migration command preview status:
 - node removal preview steps: implemented
 - port removal preview steps: implemented
 - deterministic affected-ID reporting: implemented
-- migration application: not implemented
+- migration application integration: implemented
 - graph command generation: not implemented
 - automatic graph repair: not implemented
 - editor migration UI: not implemented
