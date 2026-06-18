@@ -106,6 +106,29 @@ namespace wng
         }
     };
 
+    // Status transition for one command ID across a completed editor-state command
+    // result. This is read-only introspection over the captured before/after
+    // snapshots and does not re-run or mutate editor state.
+    struct GraphEditorCommandResultStatus {
+        GraphEditorCommandStatus before;
+        GraphEditorCommandStatus after;
+
+        bool availability_changed() const
+        {
+            return before.available != after.available;
+        }
+
+        bool became_available() const
+        {
+            return !before.available && after.available;
+        }
+
+        bool became_unavailable() const
+        {
+            return before.available && !after.available;
+        }
+    };
+
     // Captures a non-rendering pending link interaction. WNG core stores only
     // stable port IDs here; screen-space mouse positions and hit testing belong
     // to higher layers.
@@ -239,6 +262,30 @@ namespace wng
         GraphEditorCommandId command)
     {
         return graph_editor_command_status(editor_state, command).available;
+    }
+
+    inline GraphEditorCommandStatus graph_editor_command_result_before_status(
+        const GraphEditorStateCommandResult& result,
+        GraphEditorCommandId command)
+    {
+        return graph_editor_command_status(result.before, command);
+    }
+
+    inline GraphEditorCommandStatus graph_editor_command_result_after_status(
+        const GraphEditorStateCommandResult& result,
+        GraphEditorCommandId command)
+    {
+        return graph_editor_command_status(result.after, command);
+    }
+
+    inline GraphEditorCommandResultStatus graph_editor_command_result_status(
+        const GraphEditorStateCommandResult& result,
+        GraphEditorCommandId command)
+    {
+        GraphEditorCommandResultStatus status;
+        status.before = graph_editor_command_result_before_status(result, command);
+        status.after = graph_editor_command_result_after_status(result, command);
+        return status;
     }
 
     inline GraphEditorStateCommandResult select_graph_editor_node(

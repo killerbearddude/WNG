@@ -346,6 +346,85 @@ namespace
             wng::GraphEditorCommandUnavailableReason::None);
     }
 
+    void assert_editor_state_command_result_status()
+    {
+        wng::GraphEditorState editor_state;
+        const wng::GraphEditorCommandId clear_selection =
+            wng::GraphEditorCommandId::ClearSelection;
+        const wng::GraphEditorCommandId cancel_pending_link =
+            wng::GraphEditorCommandId::CancelPendingLink;
+        const wng::GraphEditorCommandId invalid_command =
+            static_cast<wng::GraphEditorCommandId>(99);
+        const wng::NodeId node { 11U };
+        const wng::PortId source_port { 21U };
+        const wng::PortId target_port { 22U };
+
+        wng::GraphEditorStateCommandResult command =
+            wng::run_graph_editor_state_command(editor_state, clear_selection);
+        wng::GraphEditorCommandResultStatus status =
+            wng::graph_editor_command_result_status(command, clear_selection);
+        assert(command.result == wng::Result::InvalidArgument);
+        assert(!status.before.available);
+        assert(!status.after.available);
+        assert(!status.availability_changed());
+        assert(!status.became_available());
+        assert(!status.became_unavailable());
+        assert(status.before.unavailable_reason ==
+            wng::GraphEditorCommandUnavailableReason::NoSelection);
+        assert(status.after.unavailable_reason ==
+            wng::GraphEditorCommandUnavailableReason::NoSelection);
+
+        command = wng::select_graph_editor_node(editor_state, node);
+        status = wng::graph_editor_command_result_status(command, clear_selection);
+        assert(command.success());
+        assert(status.availability_changed());
+        assert(status.became_available());
+        assert(!status.became_unavailable());
+        assert(!status.before.available);
+        assert(status.after.available);
+
+        wng::GraphEditorCommandStatus before_status =
+            wng::graph_editor_command_result_before_status(command, clear_selection);
+        wng::GraphEditorCommandStatus after_status =
+            wng::graph_editor_command_result_after_status(command, clear_selection);
+        assert(before_status.unavailable_reason ==
+            wng::GraphEditorCommandUnavailableReason::NoSelection);
+        assert(after_status.unavailable_reason ==
+            wng::GraphEditorCommandUnavailableReason::None);
+
+        command = wng::run_graph_editor_state_command(editor_state, clear_selection);
+        status = wng::graph_editor_command_result_status(command, clear_selection);
+        assert(command.success());
+        assert(status.availability_changed());
+        assert(!status.became_available());
+        assert(status.became_unavailable());
+        assert(status.before.available);
+        assert(!status.after.available);
+        assert(status.after.unavailable_reason ==
+            wng::GraphEditorCommandUnavailableReason::NoSelection);
+
+        status = wng::graph_editor_command_result_status(command, invalid_command);
+        assert(!status.before.available);
+        assert(!status.after.available);
+        assert(!status.availability_changed());
+        assert(status.before.unavailable_reason ==
+            wng::GraphEditorCommandUnavailableReason::InvalidCommand);
+        assert(status.after.unavailable_reason ==
+            wng::GraphEditorCommandUnavailableReason::InvalidCommand);
+
+        assert(editor_state.begin_pending_link(source_port) == wng::Result::Ok);
+        assert(editor_state.set_pending_link_target(target_port) == wng::Result::Ok);
+        command = wng::run_graph_editor_state_command(editor_state, cancel_pending_link);
+        status = wng::graph_editor_command_result_status(command, cancel_pending_link);
+        assert(command.success());
+        assert(status.availability_changed());
+        assert(status.became_unavailable());
+        assert(status.before.available);
+        assert(!status.after.available);
+        assert(status.after.unavailable_reason ==
+            wng::GraphEditorCommandUnavailableReason::NoActivePendingLink);
+    }
+
     void assert_editor_state_command_dispatch()
     {
         wng::GraphEditorState editor_state;
@@ -500,6 +579,7 @@ int main()
     assert_editor_state_set_commands();
     assert_editor_state_clear_commands();
     assert_editor_state_command_status();
+    assert_editor_state_command_result_status();
     assert_editor_state_command_dispatch();
 
     return 0;
