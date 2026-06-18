@@ -30,9 +30,8 @@ namespace
         wng::LinkId link;
     };
 
-    SelectionContext make_context()
+    void build_context(SelectionContext& context)
     {
-        SelectionContext context;
         assert(context.session.graph().create_node(make_node("source"), &context.source) ==
             wng::Result::Ok);
         assert(context.session.graph().create_node(make_node("sink"), &context.sink) ==
@@ -49,12 +48,13 @@ namespace
             context.source_out,
             context.sink_in,
             &context.link) == wng::Result::Ok);
-        return context;
     }
 
     void assert_delete_graph_objects_becomes_unavailable()
     {
-        SelectionContext context = make_context();
+        SelectionContext context;
+        build_context(context);
+
         wng::GraphEditorState editor_state;
         assert(editor_state.select_link(context.link) == wng::Result::Ok);
         assert(editor_state.select_port(context.source_out) == wng::Result::Ok);
@@ -94,7 +94,9 @@ namespace
 
     void assert_stale_selection_cleanup_becomes_no_selection()
     {
-        SelectionContext context = make_context();
+        SelectionContext context;
+        build_context(context);
+
         wng::GraphEditorState editor_state;
         assert(editor_state.select_node(wng::NodeId { 9001U }) == wng::Result::Ok);
 
