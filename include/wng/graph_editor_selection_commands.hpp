@@ -6,6 +6,7 @@
 
 #include <cstddef>
 
+#include <wng/graph.hpp>
 #include <wng/graph_command_transaction.hpp>
 #include <wng/graph_editor_state.hpp>
 #include <wng/graph_session.hpp>
@@ -13,6 +14,40 @@
 
 namespace wng
 {
+    // Read-only graph-context availability for selection-driven graph deletion.
+    // This distinguishes live selectable graph objects from stale editor IDs
+    // without mutating Graph, GraphSession, command history, or editor state.
+    struct GraphEditorSelectionCommandAvailability {
+        std::size_t selected_nodes = 0;
+        std::size_t selected_ports = 0;
+        std::size_t selected_links = 0;
+        std::size_t live_nodes = 0;
+        std::size_t live_ports = 0;
+        std::size_t live_links = 0;
+        std::size_t stale_nodes = 0;
+        std::size_t stale_ports = 0;
+        std::size_t stale_links = 0;
+
+        std::size_t selected_count() const;
+        std::size_t live_count() const;
+        std::size_t stale_count() const;
+
+        bool has_selection() const;
+        bool has_live_selection() const;
+        bool has_stale_selection() const;
+        bool only_stale_selection() const;
+
+        bool delete_selected_nodes() const;
+        bool delete_selected_ports() const;
+        bool delete_selected_links() const;
+        bool delete_selected_graph_objects() const;
+        bool any_delete_available() const;
+    };
+
+    GraphEditorSelectionCommandAvailability graph_editor_selection_command_availability(
+        const Graph& graph,
+        const GraphEditorState& editor_state);
+
     // Reports the result of one selection-driven delete operation. Successful
     // graph command records are grouped into one transaction and committed to the
     // session as one user operation when possible.
