@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include <wng/graph_editor_selection_commands.hpp>
 #include <wng/graph_editor_state.hpp>
 
 namespace
@@ -26,6 +27,23 @@ namespace
     void require_absent(const std::string& text, const std::string& needle)
     {
         assert(!contains(text, needle));
+    }
+
+    wng::NodeDesc graph_context_node_desc(const char* title)
+    {
+        wng::NodeDesc desc;
+        desc.type = "test.node";
+        desc.title = title;
+        return desc;
+    }
+
+    wng::PortDesc graph_context_port_desc(wng::PortKind kind, const char* name)
+    {
+        wng::PortDesc desc;
+        desc.kind = kind;
+        desc.name = name;
+        desc.type = "number";
+        return desc;
     }
 
     void assert_editor_state_availability()
@@ -425,6 +443,81 @@ namespace
             wng::GraphEditorCommandUnavailableReason::NoActivePendingLink);
     }
 
+    void assert_graph_context_selection_availability()
+    {
+        wng::Graph graph;
+        wng::NodeId source;
+        wng::NodeId sink;
+        wng::PortId source_out;
+        wng::PortId sink_in;
+        wng::LinkId link;
+        assert(graph.create_node(graph_context_node_desc("source"), &source) ==
+            wng::Result::Ok);
+        assert(graph.create_node(graph_context_node_desc("sink"), &sink) ==
+            wng::Result::Ok);
+        assert(graph.add_port(
+            source,
+            graph_context_port_desc(wng::PortKind::Output, "out"),
+            &source_out) == wng::Result::Ok);
+        assert(graph.add_port(
+            sink,
+            graph_context_port_desc(wng::PortKind::Input, "in"),
+            &sink_in) == wng::Result::Ok);
+        assert(graph.create_link(source_out, sink_in, &link) == wng::Result::Ok);
+
+        wng::GraphEditorState editor_state;
+        wng::GraphEditorSelectionCommandAvailability graph_availability =
+            wng::graph_editor_selection_command_availability(graph, editor_state);
+        assert(graph_availability.selected_count() == 0U);
+        assert(graph_availability.live_count() == 0U);
+        assert(graph_availability.stale_count() == 0U);
+        assert(!graph_availability.has_selection());
+        assert(!graph_availability.has_live_selection());
+        assert(!graph_availability.has_stale_selection());
+        assert(!graph_availability.only_stale_selection());
+        assert(!graph_availability.any_delete_available());
+
+        assert(editor_state.select_node(wng::NodeId { 9001U }) == wng::Result::Ok);
+        assert(editor_state.select_port(wng::PortId { 9002U }) == wng::Result::Ok);
+        assert(editor_state.select_link(wng::LinkId { 9003U }) == wng::Result::Ok);
+        graph_availability = wng::graph_editor_selection_command_availability(
+            graph,
+            editor_state);
+        assert(graph_availability.selected_count() == 3U);
+        assert(graph_availability.live_count() == 0U);
+        assert(graph_availability.stale_count() == 3U);
+        assert(graph_availability.stale_nodes == 1U);
+        assert(graph_availability.stale_ports == 1U);
+        assert(graph_availability.stale_links == 1U);
+        assert(graph_availability.has_selection());
+        assert(!graph_availability.has_live_selection());
+        assert(graph_availability.has_stale_selection());
+        assert(graph_availability.only_stale_selection());
+        assert(!graph_availability.delete_selected_graph_objects());
+        assert(!graph_availability.any_delete_available());
+
+        assert(editor_state.select_node(source) == wng::Result::Ok);
+        assert(editor_state.select_port(source_out) == wng::Result::Ok);
+        assert(editor_state.select_link(link) == wng::Result::Ok);
+        graph_availability = wng::graph_editor_selection_command_availability(
+            graph,
+            editor_state);
+        assert(graph_availability.selected_count() == 6U);
+        assert(graph_availability.live_nodes == 1U);
+        assert(graph_availability.live_ports == 1U);
+        assert(graph_availability.live_links == 1U);
+        assert(graph_availability.live_count() == 3U);
+        assert(graph_availability.stale_count() == 3U);
+        assert(graph_availability.has_live_selection());
+        assert(graph_availability.has_stale_selection());
+        assert(!graph_availability.only_stale_selection());
+        assert(graph_availability.delete_selected_nodes());
+        assert(graph_availability.delete_selected_ports());
+        assert(graph_availability.delete_selected_links());
+        assert(graph_availability.delete_selected_graph_objects());
+        assert(graph_availability.any_delete_available());
+    }
+
     void assert_editor_state_command_dispatch()
     {
         wng::GraphEditorState editor_state;
@@ -580,6 +673,7 @@ int main()
     assert_editor_state_clear_commands();
     assert_editor_state_command_status();
     assert_editor_state_command_result_status();
+    assert_graph_context_selection_availability();
     assert_editor_state_command_dispatch();
 
     return 0;
