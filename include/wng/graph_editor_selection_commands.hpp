@@ -249,6 +249,8 @@ namespace wng
         Result result = Result::Ok;
         GraphTransactionResult commit_result;
         GraphCommandTransaction transaction;
+        GraphEditorSelectionCommandAvailability before;
+        GraphEditorSelectionCommandAvailability after;
         std::size_t deleted_links = 0;
         std::size_t deleted_ports = 0;
         std::size_t deleted_nodes = 0;
@@ -256,6 +258,57 @@ namespace wng
         bool success() const;
         std::size_t deleted_count() const;
     };
+
+    // Status transition for one graph-context selection command across a
+    // completed selection command result. This is read-only introspection over
+    // captured before/after availability snapshots and does not re-run commands.
+    struct GraphEditorSelectionCommandResultStatus {
+        GraphEditorSelectionCommandStatus before;
+        GraphEditorSelectionCommandStatus after;
+
+        bool availability_changed() const
+        {
+            return before.available != after.available;
+        }
+
+        bool became_available() const
+        {
+            return !before.available && after.available;
+        }
+
+        bool became_unavailable() const
+        {
+            return before.available && !after.available;
+        }
+    };
+
+    inline GraphEditorSelectionCommandStatus graph_editor_selection_command_result_before_status(
+        const GraphEditorSelectionCommandResult& result,
+        GraphEditorSelectionCommandId command)
+    {
+        return graph_editor_selection_command_status(result.before, command);
+    }
+
+    inline GraphEditorSelectionCommandStatus graph_editor_selection_command_result_after_status(
+        const GraphEditorSelectionCommandResult& result,
+        GraphEditorSelectionCommandId command)
+    {
+        return graph_editor_selection_command_status(result.after, command);
+    }
+
+    inline GraphEditorSelectionCommandResultStatus graph_editor_selection_command_result_status(
+        const GraphEditorSelectionCommandResult& result,
+        GraphEditorSelectionCommandId command)
+    {
+        GraphEditorSelectionCommandResultStatus status;
+        status.before = graph_editor_selection_command_result_before_status(
+            result,
+            command);
+        status.after = graph_editor_selection_command_result_after_status(
+            result,
+            command);
+        return status;
+    }
 
     // Deletes selected links through the session graph and clears stale editor
     // state through mutation summaries. Stale selected link IDs are deselected.

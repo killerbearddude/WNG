@@ -39,6 +39,27 @@ namespace
             ids.end());
     }
 
+    void capture_initial_availability(
+        wng::GraphEditorSelectionCommandResult& result,
+        const wng::GraphSession& session,
+        const wng::GraphEditorState& editor_state)
+    {
+        result.before = wng::graph_editor_selection_command_availability(
+            session.graph(),
+            editor_state);
+        result.after = result.before;
+    }
+
+    void capture_final_availability(
+        wng::GraphEditorSelectionCommandResult& result,
+        const wng::GraphSession& session,
+        const wng::GraphEditorState& editor_state)
+    {
+        result.after = wng::graph_editor_selection_command_availability(
+            session.graph(),
+            editor_state);
+    }
+
     template <typename Id>
     bool snapshot_ids(
         const std::vector<Id>& selected,
@@ -207,13 +228,17 @@ namespace wng
         GraphEditorState& editor_state)
     {
         GraphEditorSelectionCommandResult result;
+        capture_initial_availability(result, session, editor_state);
+
         std::vector<LinkId> links;
         if (!snapshot_ids(editor_state.selected_links(), links, result)) {
+            capture_final_availability(result, session, editor_state);
             return result;
         }
 
         delete_links_into(session, editor_state, links, result);
         commit_if_needed(result, session);
+        capture_final_availability(result, session, editor_state);
         return result;
     }
 
@@ -222,13 +247,17 @@ namespace wng
         GraphEditorState& editor_state)
     {
         GraphEditorSelectionCommandResult result;
+        capture_initial_availability(result, session, editor_state);
+
         std::vector<PortId> ports;
         if (!snapshot_ids(editor_state.selected_ports(), ports, result)) {
+            capture_final_availability(result, session, editor_state);
             return result;
         }
 
         delete_ports_into(session, editor_state, ports, result);
         commit_if_needed(result, session);
+        capture_final_availability(result, session, editor_state);
         return result;
     }
 
@@ -237,13 +266,17 @@ namespace wng
         GraphEditorState& editor_state)
     {
         GraphEditorSelectionCommandResult result;
+        capture_initial_availability(result, session, editor_state);
+
         std::vector<NodeId> nodes;
         if (!snapshot_ids(editor_state.selected_nodes(), nodes, result)) {
+            capture_final_availability(result, session, editor_state);
             return result;
         }
 
         delete_nodes_into(session, editor_state, nodes, result);
         commit_if_needed(result, session);
+        capture_final_availability(result, session, editor_state);
         return result;
     }
 
@@ -252,6 +285,8 @@ namespace wng
         GraphEditorState& editor_state)
     {
         GraphEditorSelectionCommandResult result;
+        capture_initial_availability(result, session, editor_state);
+
         std::vector<LinkId> links;
         std::vector<PortId> ports;
         std::vector<NodeId> nodes;
@@ -261,6 +296,7 @@ namespace wng
         if (!snapshot_ids(editor_state.selected_links(), links, result) ||
             !snapshot_ids(editor_state.selected_ports(), ports, result) ||
             !snapshot_ids(editor_state.selected_nodes(), nodes, result)) {
+            capture_final_availability(result, session, editor_state);
             return result;
         }
 
@@ -270,6 +306,7 @@ namespace wng
         delete_ports_into(session, editor_state, ports, result);
         delete_nodes_into(session, editor_state, nodes, result);
         commit_if_needed(result, session);
+        capture_final_availability(result, session, editor_state);
         return result;
     }
 }
