@@ -14,6 +14,27 @@
 
 namespace wng
 {
+    // Identifies graph-context selection commands that operate over currently
+    // selected graph objects.
+    enum class GraphEditorSelectionCommandId {
+        DeleteSelectedNodes,
+        DeleteSelectedPorts,
+        DeleteSelectedLinks,
+        DeleteSelectedGraphObjects
+    };
+
+    // Explains why a graph-context selection command is unavailable. These are
+    // state reasons only; user-facing labels and menu/tooltips belong above WNG.
+    enum class GraphEditorSelectionCommandUnavailableReason {
+        None,
+        NoSelection,
+        OnlyStaleSelection,
+        NoLiveNodes,
+        NoLivePorts,
+        NoLiveLinks,
+        InvalidCommand
+    };
+
     // Read-only graph-context availability for selection-driven graph deletion.
     // This distinguishes live selectable graph objects from stale editor IDs
     // without mutating Graph, GraphSession, command history, or editor state.
@@ -92,6 +113,15 @@ namespace wng
         }
     };
 
+    // Read-only status for one graph-context selection command. This preserves
+    // the count-based availability snapshot while adding deterministic reasons
+    // for disabled commands.
+    struct GraphEditorSelectionCommandStatus {
+        bool available = false;
+        GraphEditorSelectionCommandUnavailableReason unavailable_reason =
+            GraphEditorSelectionCommandUnavailableReason::None;
+    };
+
     inline GraphEditorSelectionCommandAvailability graph_editor_selection_command_availability(
         const Graph& graph,
         const GraphEditorState& editor_state)
@@ -126,6 +156,90 @@ namespace wng
         }
 
         return availability;
+    }
+
+    inline GraphEditorSelectionCommandStatus graph_editor_selection_command_status(
+        const GraphEditorSelectionCommandAvailability& availability,
+        GraphEditorSelectionCommandId command)
+    {
+        GraphEditorSelectionCommandStatus status;
+        switch (command) {
+        case GraphEditorSelectionCommandId::DeleteSelectedNodes:
+            status.available = availability.delete_selected_nodes();
+            if (status.available) {
+                return status;
+            }
+            status.unavailable_reason = !availability.has_selection() ?
+                GraphEditorSelectionCommandUnavailableReason::NoSelection :
+                (availability.only_stale_selection() ?
+                    GraphEditorSelectionCommandUnavailableReason::OnlyStaleSelection :
+                    GraphEditorSelectionCommandUnavailableReason::NoLiveNodes);
+            return status;
+        case GraphEditorSelectionCommandId::DeleteSelectedPorts:
+            status.available = availability.delete_selected_ports();
+            if (status.available) {
+                return status;
+            }
+            status.unavailable_reason = !availability.has_selection() ?
+                GraphEditorSelectionCommandUnavailableReason::NoSelection :
+                (availability.only_stale_selection() ?
+                    GraphEditorSelectionCommandUnavailableReason::OnlyStaleSelection :
+                    GraphEditorSelectionCommandUnavailableReason::NoLivePorts);
+            return status;
+        case GraphEditorSelectionCommandId::DeleteSelectedLinks:
+            status.available = availability.delete_selected_links();
+            if (status.available) {
+                return status;
+            }
+            status.unavailable_reason = !availability.has_selection() ?
+                GraphEditorSelectionCommandUnavailableReason::NoSelection :
+                (availability.only_stale_selection() ?
+                    GraphEditorSelectionCommandUnavailableReason::OnlyStaleSelection :
+                    GraphEditorSelectionCommandUnavailableReason::NoLiveLinks);
+            return status;
+        case GraphEditorSelectionCommandId::DeleteSelectedGraphObjects:
+            status.available = availability.delete_selected_graph_objects();
+            if (status.available) {
+                return status;
+            }
+            status.unavailable_reason = !availability.has_selection() ?
+                GraphEditorSelectionCommandUnavailableReason::NoSelection :
+                GraphEditorSelectionCommandUnavailableReason::OnlyStaleSelection;
+            return status;
+        }
+
+        status.available = false;
+        status.unavailable_reason =
+            GraphEditorSelectionCommandUnavailableReason::InvalidCommand;
+        return status;
+    }
+
+    inline GraphEditorSelectionCommandStatus graph_editor_selection_command_status(
+        const Graph& graph,
+        const GraphEditorState& editor_state,
+        GraphEditorSelectionCommandId command)
+    {
+        return graph_editor_selection_command_status(
+            graph_editor_selection_command_availability(graph, editor_state),
+            command);
+    }
+
+    inline bool graph_editor_selection_command_available(
+        const GraphEditorSelectionCommandAvailability& availability,
+        GraphEditorSelectionCommandId command)
+    {
+        return graph_editor_selection_command_status(availability, command).available;
+    }
+
+    inline bool graph_editor_selection_command_available(
+        const Graph& graph,
+        const GraphEditorState& editor_state,
+        GraphEditorSelectionCommandId command)
+    {
+        return graph_editor_selection_command_status(
+            graph,
+            editor_state,
+            command).available;
     }
 
     // Reports the result of one selection-driven delete operation. Successful
